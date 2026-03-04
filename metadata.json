@@ -1,0 +1,7 @@
+{
+  "name": "SAVE ENERGY",
+  "description": "Descubra e economize até 30% na sua conta de luz com nosso processo 100% digital. Envie sua fatura, receba seu cálculo de desconto em 24h e comece a economizar sem investimento inicial.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

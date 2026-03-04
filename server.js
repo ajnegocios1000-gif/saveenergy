@@ -40,12 +40,6 @@ if (supabaseUrl && supabaseKey) {
   }
 }
 
-const ECO_SYSTEM_INSTRUCTION = `Você é o EcoAgente, um consultor de eficiência energética movido a IA de elite da SAVE ENERGY. 
-Seu objetivo é reduzir as contas de ENERGIA ELÉTRICA dos usuários através de análise técnica de faturas, dicas práticas de consumo e hábitos sustentáveis.
-Tom de voz: Profissional, motivador, analítico e focado em economia real. 
-Idioma: Português Brasileiro. Responda sempre de forma estruturada, com seções claras e bullet points. 
-Não trate de outros assuntos fora de eficiência elétrica.`;
-
 /**
  * Rotina de Teste de Chaves: Força a validação de todas as chaves a cada 4 horas
  */
@@ -86,75 +80,6 @@ async function forceReTestAllKeys() {
 
 // Inicia o intervalo de 4 horas (14400000ms)
 setInterval(forceReTestAllKeys, 14400000);
-
-async function getWorkingAIResponse(contents, systemInstruction, testKey = null, configOverride = {}) {
-  let keys = [];
-  
-  if (testKey) {
-    keys = [{ key_value: testKey, label: 'Chave de Teste Manual', id: 'test' }];
-  } else if (supabase) {
-    // Busca apenas chaves ativas (verde) - Ordena por criação para conectar sempre na primeira disponível
-    const { data } = await supabase
-      .from('api_keys')
-      .select('*')
-      .eq('status', 'active')
-      .order('created_at', { ascending: true });
-    keys = data || [];
-  }
-
-  if (keys.length === 0 && process.env.API_KEY && !testKey) {
-    keys.push({ key_value: process.env.API_KEY, label: 'Default ENV', id: 'env' });
-  }
-
-  if (keys.length === 0) throw new Error('Nenhuma chave de API ativa encontrada no sistema.');
-
-  let lastError = null;
-  for (const keyObj of keys) {
-    try {
-      console.log(`Log: Tentando IA com chave: [${keyObj.label}]`);
-      const ai = new GoogleGenAI({ apiKey: keyObj.key_value });
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents,
-        config: { 
-          systemInstruction, 
-          temperature: 0.7,
-          ...configOverride
-        }
-      });
-      return response.text;
-    } catch (e) {
-      const msg = e.message.toLowerCase();
-      console.error(`Log: Chave [${keyObj.label}] falhou em tempo real:`, msg);
-      lastError = e;
-
-      // Se falhar em produção, atualiza o status para pular na próxima rodada
-      if (supabase && keyObj.id !== 'test' && keyObj.id !== 'env') {
-        const isQuota = msg.includes('429') || msg.includes('quota') || msg.includes('limit') || msg.includes('exhausted');
-        const newStatus = isQuota ? 'no_credit' : 'error';
-        await supabase.from('api_keys').update({ status: newStatus }).eq('id', keyObj.id);
-      }
-      
-      // Continua o loop para a próxima chave verde
-      if (testKey) throw e;
-    }
-  }
-  throw lastError;
-}
-
-app.post('/api/chat', async (req, res) => {
-  try {
-    const { message, history, test_key } = req.body;
-    const contents = [...(history || []).map(m => ({
-      role: m.role,
-      parts: m.parts
-    })), { role: 'user', parts: [{ text: message }] }];
-    const text = await getWorkingAIResponse(contents, ECO_SYSTEM_INSTRUCTION, test_key);
-    res.json({ text });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
 
 app.post('/api/admin/test-key', async (req, res) => {
   const { id, key_value } = req.body;
@@ -246,57 +171,12 @@ app.post('/api/leads', async (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/api/analyze-bill', async (req, res) => {
-  try {
-    const { imageBase64, mimeType } = req.body;
-    if (!imageBase64) return res.status(400).json({ error: 'Imagem não fornecida' });
-
-    const prompt = `Analise esta fatura de energia elétrica e extraia os dados necessários.`;
-
-    const contents = {
-      parts: [
-        { inlineData: { data: imageBase64, mimeType: mimeType || 'image/jpeg' } },
-        { text: prompt }
-      ]
-    };
-
-    const extractionInstruction = "Você é um especialista em OCR e extração de dados de faturas de energia brasileiras. Extraia os dados com precisão cirúrgica.";
-    
-    const responseSchema = {
-      type: Type.OBJECT,
-      properties: {
-        nome: { type: Type.STRING, description: "Nome completo do titular" },
-        logradouro: { type: Type.STRING, description: "Rua/Avenida" },
-        bairro: { type: Type.STRING },
-        cidade: { type: Type.STRING },
-        uf: { type: Type.STRING, description: "Estado com 2 letras" },
-        cep: { type: Type.STRING, description: "Apenas números" },
-        nitidez_ok: { type: Type.BOOLEAN, description: "True se a imagem for legível" }
-      },
-      required: ["nitidez_ok"]
-    };
-
-    const textResponse = await getWorkingAIResponse(contents, extractionInstruction, null, {
-      responseMimeType: "application/json",
-      responseSchema
-    });
-    
-    const data = JSON.parse(textResponse);
-    res.json(data);
-  } catch (e) {
-    console.error('Erro na análise da fatura:', e.message);
-    res.status(500).json({ error: 'Falha ao analisar fatura', details: e.message });
-  }
-});
-
 // Vite middleware for development
 if (process.env.NODE_ENV !== 'production') {
   const vite = await createViteServer({
     server: { 
       middlewareMode: true,
-      hmr: {
-        host: '127.0.0.1',
-      }
+      hmr: false, // Disable HMR to avoid websocket errors in this environment
     },
     appType: 'spa',
   });
