@@ -18,8 +18,11 @@ const getEnvVar = (key: string): string | undefined => {
   return undefined;
 };
 
-const supabaseUrl = getEnvVar('VITE_SUPABASE_URL');
-const supabaseAnonKey = getEnvVar('VITE_SUPABASE_ANON_KEY');
+const supabaseUrl = getEnvVar('VITE_SUPABASE_URL') || (typeof process !== 'undefined' ? process.env.VITE_SUPABASE_URL : undefined);
+const supabaseAnonKey = getEnvVar('VITE_SUPABASE_ANON_KEY') || (typeof process !== 'undefined' ? process.env.VITE_SUPABASE_ANON_KEY : undefined);
+
+console.log('Log: Supabase Client Config - URL:', supabaseUrl ? 'OK' : 'MISSING');
+console.log('Log: Supabase Client Config - KEY:', supabaseAnonKey ? 'OK' : 'MISSING');
 
 const isConfigured = !!supabaseUrl && !!supabaseAnonKey;
 
