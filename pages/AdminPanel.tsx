@@ -352,7 +352,7 @@ const AdminPanel: React.FC = () => {
         <div className="mt-auto space-y-4">
           <Tooltip text="Ver como o site aparece para o público" position="right">
             <Link to="/" className="w-full flex items-center justify-center gap-3 p-4 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] shadow-lg hover:bg-emerald-700 transition-all active:scale-95">
-              <ArrowLeft size={16} /> Voltar ao Site
+              <Globe size={16} /> Visualizar Site
             </Link>
           </Tooltip>
           <Tooltip text="Sair do painel administrativo" position="right">
@@ -366,11 +366,16 @@ const AdminPanel: React.FC = () => {
           <div className="space-y-1">
             <div className="flex items-center gap-4">
               <h2 className="text-4xl font-black uppercase tracking-tighter text-slate-800">{activeTab === 'api-keys' ? 'Gerenciador de APIs' : activeTab.replace('-', ' ')}</h2>
-              {activeTab !== 'leads' && (
-                <button onClick={() => setActiveTab('leads')} className="px-4 py-2 bg-slate-100 text-slate-500 rounded-xl font-black uppercase text-[8px] tracking-widest flex items-center gap-2 hover:bg-slate-200 transition-all">
-                  <ArrowLeft size={12} /> Voltar ao Início
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {activeTab !== 'leads' && (
+                  <button onClick={() => setActiveTab('leads')} className="px-4 py-2 bg-slate-100 text-slate-500 rounded-xl font-black uppercase text-[8px] tracking-widest flex items-center gap-2 hover:bg-slate-200 transition-all">
+                    <ArrowLeft size={12} /> Voltar ao Início
+                  </button>
+                )}
+                <Link to="/" className="px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl font-black uppercase text-[8px] tracking-widest flex items-center gap-2 hover:bg-emerald-600 hover:text-white transition-all">
+                  <Globe size={12} /> Visualizar Site
+                </Link>
+              </div>
             </div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">SISTEMA MASTER • {ADMIN_EMAILS.join(' & ')}</p>
           </div>

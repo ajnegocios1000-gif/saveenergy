@@ -159,8 +159,8 @@ const Home: React.FC = () => {
 
           <div className="flex items-center gap-4">
             {isAdmin(user?.email) && (
-              <Link to="/admin" className="hidden lg:flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all">
-                <LayoutDashboard size={14} /> ENTRAR NO ADMIN
+              <Link to="/admin" className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg">
+                <LayoutDashboard size={14} /> PAINEL ADMIN
               </Link>
             )}
             <Link to="/register" className="bg-emerald-600 text-white px-8 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg active:scale-95 transition-all">Começar Agora</Link>
@@ -347,6 +347,18 @@ const Home: React.FC = () => {
           Fale com um consultor
         </span>
       </a>
+
+      {isAdmin(user?.email) && (
+        <Link 
+          to="/admin" 
+          className="fixed bottom-8 left-8 z-[100] bg-slate-900 text-white p-4 rounded-full shadow-2xl hover:bg-blue-600 hover:scale-110 transition-all active:scale-95 group flex items-center gap-3"
+        >
+          <LayoutDashboard size={32} />
+          <span className="absolute left-full ml-4 top-1/2 -translate-y-1/2 bg-white text-slate-900 border border-slate-200 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl">
+            Retornar ao Admin
+          </span>
+        </Link>
+      )}
     </div>
   );
 };

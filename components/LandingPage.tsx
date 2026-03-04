@@ -91,8 +91,8 @@ const Navbar = ({ logoUrl }: { logoUrl?: string }) => {
         </div>
         <div className="flex items-center gap-4">
           {isAdmin(user?.email) && (
-            <Link to="/admin" className="hidden lg:flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all">
-              <LayoutDashboard size={14} /> ENTRAR NO ADMIN
+            <Link to="/admin" className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg">
+              <LayoutDashboard size={14} /> PAINEL ADMIN
             </Link>
           )}
           <Link to="/register" className="bg-emerald-600 text-white px-8 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg active:scale-95 transition-all">Começar Agora</Link>
@@ -103,6 +103,7 @@ const Navbar = ({ logoUrl }: { logoUrl?: string }) => {
 };
 
 const LandingPage: React.FC = () => {
+  const { user } = useAuth();
   const [settings, setSettings] = useState<any>(null);
   useEffect(() => {
     fetch('/api/settings').then(r => r.json()).then(setSettings);
@@ -239,8 +240,8 @@ const LandingPage: React.FC = () => {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <img src="https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?auto=format&fit=crop&q=80&w=600" className="rounded-[2rem] w-full h-64 object-cover shadow-2xl" alt="Solar 1" />
-              <img src="https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?auto=format&fit=crop&q=80&w=600" className="rounded-[2rem] w-full h-64 object-cover shadow-2xl mt-12" alt="Solar 2" />
+              <img src={settings.about_image_1 || "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?auto=format&fit=crop&q=80&w=600"} className="rounded-[2rem] w-full h-64 object-cover shadow-2xl" alt="Solar 1" />
+              <img src={settings.about_image_2 || "https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?auto=format&fit=crop&q=80&w=600"} className="rounded-[2rem] w-full h-64 object-cover shadow-2xl mt-12" alt="Solar 2" />
             </div>
           </div>
         </div>
@@ -281,7 +282,7 @@ const LandingPage: React.FC = () => {
       </footer>
 
       <a 
-        href="https://wa.me/5500000000000" 
+        href={`https://wa.me/${settings.whatsapp || '5500000000000'}`} 
         target="_blank" 
         rel="noopener noreferrer"
         className="fixed bottom-8 right-8 z-[100] bg-emerald-500 text-white p-4 rounded-full shadow-2xl hover:bg-emerald-600 hover:scale-110 transition-all active:scale-95 group"
@@ -291,6 +292,18 @@ const LandingPage: React.FC = () => {
           Fale com um consultor
         </span>
       </a>
+
+      {isAdmin(user?.email) && (
+        <Link 
+          to="/admin" 
+          className="fixed bottom-8 left-8 z-[100] bg-slate-900 text-white p-4 rounded-full shadow-2xl hover:bg-blue-600 hover:scale-110 transition-all active:scale-95 group flex items-center gap-3"
+        >
+          <LayoutDashboard size={32} />
+          <span className="absolute left-full ml-4 top-1/2 -translate-y-1/2 bg-white text-slate-900 border border-slate-200 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl">
+            Retornar ao Admin
+          </span>
+        </Link>
+      )}
     </div>
   );
 };
