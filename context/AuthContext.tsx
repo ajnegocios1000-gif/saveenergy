@@ -51,13 +51,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithGoogle = async () => {
     if (!supabase) return;
+    
+    const redirectUrl = window.location.origin + '/admin';
+    console.log('Log: Iniciando login Google. Redirect para:', redirectUrl);
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin + '/admin',
+        redirectTo: redirectUrl,
       },
     });
-    if (error) throw error;
+    if (error) {
+      console.error('Erro no signInWithOAuth:', error);
+      throw error;
+    }
   };
 
   const signOut = async () => {

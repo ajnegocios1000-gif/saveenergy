@@ -35,14 +35,18 @@ const getEnv = (key) => {
 const supabaseUrl = getEnv('VITE_SUPABASE_URL');
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || getEnv('VITE_SUPABASE_ANON_KEY');
 
+const isValidUrl = (url) => url && (url.startsWith('http://') || url.startsWith('https://'));
+
 let supabase = null;
-if (supabaseUrl && supabaseKey) {
+if (isValidUrl(supabaseUrl) && supabaseKey) {
   try {
     supabase = createClient(supabaseUrl, supabaseKey);
     console.log('Log: Backend Supabase carregado ✅');
   } catch (err) {
     console.error('Log: Falha Supabase Backend:', err.message);
   }
+} else if (supabaseUrl || supabaseKey) {
+  console.warn('Log: Supabase Backend não iniciado - URL ou Chave inválida/ausente');
 }
 
 /**

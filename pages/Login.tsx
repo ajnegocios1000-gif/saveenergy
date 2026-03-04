@@ -116,8 +116,15 @@ const Login: React.FC = () => {
             </div>
 
             {error && (
-              <div className="bg-red-50 text-red-600 p-4 rounded-2xl text-[10px] font-black uppercase border border-red-100 flex items-center gap-3">
-                <AlertCircle size={18} /> {error}
+              <div className="bg-red-50 text-red-600 p-4 rounded-2xl text-[10px] font-black uppercase border border-red-100 flex flex-col gap-2">
+                <div className="flex items-center gap-3">
+                  <AlertCircle size={18} /> {error}
+                </div>
+                {error.includes("Supabase não configurado") && (
+                  <div className="mt-2 p-2 bg-white/50 rounded-lg text-slate-500 font-bold normal-case text-[9px] border border-red-200/50">
+                    Dica: Verifique se as variáveis no AI Studio estão com os nomes exatos VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.
+                  </div>
+                )}
               </div>
             )}
 
