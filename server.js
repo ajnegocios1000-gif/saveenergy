@@ -27,8 +27,13 @@ app.use(express.json({ limit: '50mb' }));
 const PORT = 3000;
 const distPath = path.join(__dirname, 'dist');
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+const getEnv = (key) => {
+  const val = process.env[key] || process.env[key.replace('VITE_', '')] || process.env[`VITE_${key}`];
+  return val ? val.trim() : '';
+};
+
+const supabaseUrl = getEnv('VITE_SUPABASE_URL');
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || getEnv('VITE_SUPABASE_ANON_KEY');
 
 let supabase = null;
 if (supabaseUrl && supabaseKey) {

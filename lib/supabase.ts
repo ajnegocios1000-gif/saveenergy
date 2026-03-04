@@ -2,24 +2,31 @@
 import { createClient } from '@supabase/supabase-js';
 
 const getEnvVar = (key: string): string | undefined => {
+  const keysToTry = [key, key.replace('VITE_', ''), `VITE_${key}`, key.toLowerCase()];
+  
   try {
-    if (typeof import.meta !== 'undefined' && (import.meta as any).env?.[key]) {
-      return (import.meta as any).env[key];
-    }
-    if (typeof process !== 'undefined' && process.env?.[key]) {
-      return process.env[key];
-    }
-    if (typeof window !== 'undefined' && (window as any)._env_?.[key]) {
-      return (window as any)._env_[key];
+    for (const k of keysToTry) {
+      // Try import.meta.env
+      if (typeof import.meta !== 'undefined' && (import.meta as any).env?.[k]) {
+        return (import.meta as any).env[k].trim();
+      }
+      // Try process.env
+      if (typeof process !== 'undefined' && process.env?.[k]) {
+        return process.env[k].trim();
+      }
+      // Try window._env_
+      if (typeof window !== 'undefined' && (window as any)._env_?.[k]) {
+        return (window as any)._env_[k].trim();
+      }
     }
   } catch (e) {
-    console.warn(`Log: Falha ao ler variável ${key}`);
+    console.warn(`Log: Erro ao tentar ler variável ${key}`);
   }
   return undefined;
 };
 
-const supabaseUrl = getEnvVar('VITE_SUPABASE_URL') || (typeof process !== 'undefined' ? process.env.VITE_SUPABASE_URL : undefined);
-const supabaseAnonKey = getEnvVar('VITE_SUPABASE_ANON_KEY') || (typeof process !== 'undefined' ? process.env.VITE_SUPABASE_ANON_KEY : undefined);
+const supabaseUrl = getEnvVar('VITE_SUPABASE_URL');
+const supabaseAnonKey = getEnvVar('VITE_SUPABASE_ANON_KEY');
 
 console.log('Log: Supabase Client Config - URL:', supabaseUrl ? 'OK' : 'MISSING');
 console.log('Log: Supabase Client Config - KEY:', supabaseAnonKey ? 'OK' : 'MISSING');

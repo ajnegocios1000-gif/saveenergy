@@ -5,14 +5,22 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('Log: Vite Config - URL:', process.env.VITE_SUPABASE_URL ? 'Configurada' : 'NÃO ENCONTRADA');
-console.log('Log: Vite Config - KEY:', process.env.VITE_SUPABASE_ANON_KEY ? 'Configurada' : 'NÃO ENCONTRADA');
+const getEnv = (key: string) => {
+  const val = process.env[key] || process.env[key.replace('VITE_', '')] || process.env[`VITE_${key}`];
+  return val ? val.trim() : '';
+};
+
+const sUrl = getEnv('VITE_SUPABASE_URL');
+const sKey = getEnv('VITE_SUPABASE_ANON_KEY');
+
+console.log('Log: Vite Config - URL:', sUrl ? 'Configurada' : 'NÃO ENCONTRADA');
+console.log('Log: Vite Config - KEY:', sKey ? 'Configurada' : 'NÃO ENCONTRADA');
 
 export default defineConfig({
   plugins: [react()],
   define: {
-    'process.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL),
-    'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY),
+    'process.env.VITE_SUPABASE_URL': JSON.stringify(sUrl),
+    'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(sKey),
   },
   server: {
     middlewareMode: true,
