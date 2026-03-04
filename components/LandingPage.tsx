@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { isAdmin } from '../constants';
+import { supabase } from '../lib/supabase';
 
 const Carousel = () => {
   const [slides, setSlides] = useState<any[]>([]);
@@ -94,6 +95,16 @@ const Navbar = ({ logoUrl }: { logoUrl?: string }) => {
             <Link to="/admin" className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg">
               <LayoutDashboard size={14} /> PAINEL ADMIN
             </Link>
+          )}
+          {!user ? (
+            <Link to="/login" className="text-[11px] font-black text-slate-500 uppercase tracking-widest hover:text-emerald-600 transition-colors">Entrar</Link>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 border border-slate-200">
+                {user.email?.charAt(0).toUpperCase()}
+              </div>
+              <button onClick={() => supabase.auth.signOut()} className="text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-500 transition-colors">Sair</button>
+            </div>
           )}
           <Link to="/register" className="bg-emerald-600 text-white px-8 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg active:scale-95 transition-all">Começar Agora</Link>
         </div>

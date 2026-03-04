@@ -37,8 +37,7 @@ const Login: React.FC = () => {
       if (isAdmin(data.user?.email)) {
         navigate('/admin', { replace: true });
       } else {
-        await supabase.auth.signOut();
-        setError('Acesso negado: Este e-mail não é o administrador master.');
+        navigate('/', { replace: true });
       }
     } catch (err: any) {
       setError(err.message || 'Falha na autenticação.');

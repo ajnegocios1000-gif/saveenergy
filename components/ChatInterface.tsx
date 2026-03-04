@@ -1,20 +1,92 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Zap, FileText, Sparkles, Lightbulb } from 'lucide-react';
+import { Send, Bot, User, Loader2, Zap, FileText, Sparkles, Lightbulb, LogIn, Phone, User as UserIcon, Save } from 'lucide-react';
 import { Message } from '../types';
 import { getGeminiResponse, analyzeBill } from '../src/services/geminiService';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
+import { Link } from 'react-router-dom';
 
 const ChatInterface: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    { 
-      role: 'model', 
-      parts: [{ text: 'Olá! Sou o EcoAgente, seu especialista em economia de energia. Posso te ajudar a entender sua conta de luz e dar dicas para reduzir seus gastos. Como posso ajudar hoje?' }] 
-    }
-  ]);
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [profile, setProfile] = useState<{ full_name: string, whatsapp: string } | null>(null);
+  const [showProfileForm, setShowProfileForm] = useState(false);
+  const [tempProfile, setTempProfile] = useState({ full_name: '', whatsapp: '' });
+  
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+      loadChatHistory();
+    }
+  }, [user]);
+
+  const fetchProfile = async () => {
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', user?.id).maybeSingle();
+    if (data) {
+      setProfile(data);
+      if (!data.whatsapp || !data.full_name) {
+        setShowProfileForm(true);
+        setTempProfile({ full_name: data.full_name || '', whatsapp: data.whatsapp || '' });
+      }
+    } else if (user) {
+      setShowProfileForm(true);
+    }
+  };
+
+  const loadChatHistory = async () => {
+    const { data, error } = await supabase
+      .from('chat_history')
+      .select('*')
+      .eq('user_id', user?.id)
+      .order('created_at', { ascending: true });
+    
+    if (data && data.length > 0) {
+      const history: Message[] = data.map((m: any) => ({
+        role: m.role as 'user' | 'model',
+        parts: [{ text: m.content }]
+      }));
+      setMessages(history);
+    } else {
+      setMessages([
+        { 
+          role: 'model', 
+          parts: [{ text: 'Olá! Sou o EcoAgente, seu especialista em economia de energia. Posso te ajudar a entender sua conta de luz e dar dicas para reduzir seus gastos. Como posso ajudar hoje?' }] 
+        }
+      ]);
+    }
+  };
+
+  const saveMessage = async (role: 'user' | 'model', content: string) => {
+    if (!user) return;
+    await supabase.from('chat_history').insert([{
+      user_id: user.id,
+      role,
+      content
+    }]);
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tempProfile.full_name || !tempProfile.whatsapp) return;
+    
+    const { error } = await supabase.from('profiles').upsert({
+      id: user?.id,
+      full_name: tempProfile.full_name,
+      whatsapp: tempProfile.whatsapp,
+      updated_at: new Date().toISOString()
+    });
+
+    if (!error) {
+      setProfile({ full_name: tempProfile.full_name, whatsapp: tempProfile.whatsapp });
+      setShowProfileForm(false);
+    }
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -34,6 +106,7 @@ const ChatInterface: React.FC = () => {
       parts: [{ text: `[Arquivo enviado: ${file.name}] Por favor, analise esta fatura para mim.` }] 
     };
     setMessages(prev => [...prev, userMsg]);
+    await saveMessage('user', userMsg.parts[0].text);
     setIsLoading(true);
 
     const reader = new FileReader();
@@ -51,11 +124,16 @@ Endereço: ${data.logradouro}, ${data.bairro} - ${data.cidade}/${data.uf}
 Com base nesses dados, posso te ajudar a economizar até 20% na sua conta. Gostaria de saber como?`;
           
           setMessages(prev => [...prev, { role: 'model', parts: [{ text: analysisText }] }]);
+          await saveMessage('model', analysisText);
         } else {
-          setMessages(prev => [...prev, { role: 'model', parts: [{ text: 'A imagem da fatura parece estar ilegível. Poderia enviar uma foto mais nítida ou o arquivo PDF original?' }] }]);
+          const errorText = 'A imagem da fatura parece estar ilegível. Poderia enviar uma foto mais nítida ou o arquivo PDF original?';
+          setMessages(prev => [...prev, { role: 'model', parts: [{ text: errorText }] }]);
+          await saveMessage('model', errorText);
         }
       } catch (error) {
-        setMessages(prev => [...prev, { role: 'model', parts: [{ text: 'Houve um erro ao processar sua fatura. Tente novamente em instantes.' }] }]);
+        const errorText = 'Houve um erro ao processar sua fatura. Tente novamente em instantes.';
+        setMessages(prev => [...prev, { role: 'model', parts: [{ text: errorText }] }]);
+        await saveMessage('model', errorText);
       } finally {
         setIsLoading(false);
       }
@@ -67,18 +145,85 @@ Com base nesses dados, posso te ajudar a economizar até 20% na sua conta. Gosta
     if (!input.trim() || isLoading) return;
     const userMsg: Message = { role: 'user', parts: [{ text: input }] };
     setMessages(prev => [...prev, userMsg]);
+    await saveMessage('user', input);
     setInput('');
     setIsLoading(true);
 
     try {
       const text = await getGeminiResponse(input, messages);
-      if (text) setMessages(prev => [...prev, { role: 'model', parts: [{ text }] }]);
+      if (text) {
+        setMessages(prev => [...prev, { role: 'model', parts: [{ text }] }]);
+        await saveMessage('model', text);
+      }
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'model', parts: [{ text: 'Desculpe, tive uma instabilidade técnica. Pode repetir sua pergunta sobre energia?' }] }]);
+      const errorText = 'Desculpe, tive uma instabilidade técnica. Pode repetir sua pergunta sobre energia?';
+      setMessages(prev => [...prev, { role: 'model', parts: [{ text: errorText }] }]);
+      await saveMessage('model', errorText);
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (!user) {
+    return (
+      <div className="bg-white rounded-[3rem] shadow-2xl border border-slate-100 p-12 flex flex-col items-center justify-center text-center space-y-8 animate-fadeIn max-w-2xl mx-auto mt-20">
+        <div className="w-24 h-24 bg-amber-500 rounded-[2rem] flex items-center justify-center text-white shadow-2xl shadow-amber-500/30">
+          <Zap size={48} fill="currentColor" />
+        </div>
+        <div className="space-y-4">
+          <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tighter italic">Acesso Restrito ao Chat</h2>
+          <p className="text-slate-500 font-medium leading-relaxed">
+            Para conversar com o EcoAgente e salvar seu histórico de economia, você precisa estar logado.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-4 w-full">
+          <Link to="/login" className="flex-1 py-5 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl hover:bg-blue-600 transition-all active:scale-95">Entrar agora</Link>
+          <Link to="/register" className="flex-1 py-5 bg-amber-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl hover:bg-amber-600 transition-all active:scale-95">Criar conta gratuita</Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (showProfileForm) {
+    return (
+      <div className="bg-white rounded-[3rem] shadow-2xl border border-slate-100 p-12 flex flex-col items-center justify-center text-center space-y-8 animate-fadeIn max-w-2xl mx-auto mt-20">
+        <div className="w-20 h-20 bg-blue-600 rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl shadow-blue-600/30">
+          <UserIcon size={40} />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tighter italic">Quase lá!</h2>
+          <p className="text-slate-500 font-medium">Complete seu perfil para continuar a conversa.</p>
+        </div>
+        <form onSubmit={handleUpdateProfile} className="w-full space-y-4 text-left">
+          <div className="space-y-1">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Nome Completo</label>
+            <input 
+              required
+              type="text" 
+              value={tempProfile.full_name} 
+              onChange={e => setTempProfile({...tempProfile, full_name: e.target.value})}
+              className="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-600 transition-all"
+              placeholder="Seu nome"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">WhatsApp</label>
+            <input 
+              required
+              type="tel" 
+              value={tempProfile.whatsapp} 
+              onChange={e => setTempProfile({...tempProfile, whatsapp: e.target.value})}
+              className="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-600 transition-all"
+              placeholder="Ex: 5511999999999"
+            />
+          </div>
+          <button type="submit" className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl hover:bg-blue-700 transition-all active:scale-95 flex items-center justify-center gap-3">
+            <Save size={18} /> Salvar e Iniciar Chat
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 h-[calc(100vh-180px)] flex flex-col overflow-hidden animate-fadeIn max-w-4xl mx-auto mt-8">

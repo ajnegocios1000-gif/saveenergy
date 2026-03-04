@@ -163,6 +163,16 @@ const Home: React.FC = () => {
                 <LayoutDashboard size={14} /> PAINEL ADMIN
               </Link>
             )}
+            {!user ? (
+              <Link to="/login" className="text-[11px] font-black text-slate-500 uppercase tracking-widest hover:text-emerald-600 transition-colors">Entrar</Link>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-400 border border-slate-200">
+                  {user.email?.charAt(0).toUpperCase()}
+                </div>
+                <button onClick={() => supabase.auth.signOut()} className="text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-500 transition-colors">Sair</button>
+              </div>
+            )}
             <Link to="/register" className="bg-emerald-600 text-white px-8 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-emerald-700 shadow-lg active:scale-95 transition-all">Começar Agora</Link>
           </div>
         </div>
