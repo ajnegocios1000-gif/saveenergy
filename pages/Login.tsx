@@ -4,8 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Zap, ShieldCheck, Mail, Lock, Loader2, ArrowLeft, Chrome, AlertCircle } from 'lucide-react';
 import { Navigate, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-
-const MASTER_EMAIL = 'pereira.itapema@gmail.com';
+import { isAdmin } from '../constants';
 
 const Login: React.FC = () => {
   const { user, loading, signInWithGoogle } = useAuth();
@@ -17,7 +16,7 @@ const Login: React.FC = () => {
 
   // Redireciona se já estiver logado (Backup do AuthGate)
   useEffect(() => {
-    if (!loading && user?.email === MASTER_EMAIL) {
+    if (!loading && isAdmin(user?.email)) {
       navigate('/admin', { replace: true });
     }
   }, [user, loading, navigate]);
@@ -35,7 +34,7 @@ const Login: React.FC = () => {
 
       if (authError) throw authError;
 
-      if (data.user?.email === MASTER_EMAIL) {
+      if (isAdmin(data.user?.email)) {
         navigate('/admin', { replace: true });
       } else {
         await supabase.auth.signOut();

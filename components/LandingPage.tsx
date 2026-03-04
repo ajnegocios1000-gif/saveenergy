@@ -7,8 +7,7 @@ import {
   Rocket, CheckCircle2, LayoutDashboard
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-
-const MASTER_EMAIL = 'pereira.itapema@gmail.com';
+import { isAdmin } from '../constants';
 
 const Carousel = () => {
   const [slides, setSlides] = useState<any[]>([]);
@@ -91,7 +90,7 @@ const Navbar = ({ logoUrl }: { logoUrl?: string }) => {
           <a href="#faq" className="hover:text-emerald-600 transition-colors">FAQ</a>
         </div>
         <div className="flex items-center gap-4">
-          {user?.email === MASTER_EMAIL && (
+          {isAdmin(user?.email) && (
             <Link to="/admin" className="hidden lg:flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all">
               <LayoutDashboard size={14} /> ENTRAR NO ADMIN
             </Link>

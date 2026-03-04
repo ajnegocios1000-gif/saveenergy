@@ -9,10 +9,9 @@ import AdminPanel from './pages/AdminPanel';
 import Login from './pages/Login';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { isAdmin } from './constants';
 import { Loader2 } from 'lucide-react';
 import { supabase } from './lib/supabase';
-
-const MASTER_EMAIL = 'pereira.itapema@gmail.com';
 
 const AuthGate: React.FC = () => {
   const navigate = useNavigate();
@@ -23,7 +22,7 @@ const AuthGate: React.FC = () => {
   useEffect(() => {
     // Monitoramento agressivo de sessão
     const checkRedirection = (sessionUser: any) => {
-      const isMaster = sessionUser?.email === MASTER_EMAIL;
+      const isMaster = isAdmin(sessionUser?.email);
       const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
       
       if (isMaster && isAuthPage) {

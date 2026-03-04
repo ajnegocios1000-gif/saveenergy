@@ -2,9 +2,8 @@
 import React from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { isAdmin } from '../constants';
 import { Loader2, ShieldAlert, Key, ArrowLeft } from 'lucide-react';
-
-const MASTER_EMAIL = 'pereira.itapema@gmail.com';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -24,7 +23,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   // 2. Se não houver usuário ou não for o master
-  if (!user || user.email !== MASTER_EMAIL) {
+  if (!user || !isAdmin(user.email)) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-white rounded-[3rem] shadow-2xl border border-slate-100 p-12 text-center space-y-8 animate-fadeIn">

@@ -4,7 +4,9 @@ export interface Message {
   parts: { text: string }[];
 }
 
-export interface UserData {
+export interface Lead {
+  id: string;
+  created_at: string;
   fullName: string;
   email: string;
   phone: string;
@@ -17,4 +19,10 @@ export interface UserData {
     state: string;
     zipCode: string;
   };
+  faturaBase64?: string;
+  extracted?: any;
+  status: 'new' | 'executed';
+  value: number;
+  commission: number;
+  notes?: string;
 }

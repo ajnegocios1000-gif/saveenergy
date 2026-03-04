@@ -8,8 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-
-const MASTER_EMAIL = 'pereira.itapema@gmail.com';
+import { isAdmin } from '../constants';
 
 const Carousel = () => {
   const [slides, setSlides] = useState<any[]>([]);
@@ -159,7 +158,7 @@ const Home: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            {user?.email === MASTER_EMAIL && (
+            {isAdmin(user?.email) && (
               <Link to="/admin" className="hidden lg:flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all">
                 <LayoutDashboard size={14} /> ENTRAR NO ADMIN
               </Link>
@@ -296,8 +295,8 @@ const Home: React.FC = () => {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <img src="https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?auto=format&fit=crop&q=80&w=600" className="rounded-[2rem] w-full h-64 object-cover shadow-2xl" alt="Solar 1" />
-              <img src="https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?auto=format&fit=crop&q=80&w=600" className="rounded-[2rem] w-full h-64 object-cover shadow-2xl mt-12" alt="Solar 2" />
+              <img src={content?.about_image_1 || "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?auto=format&fit=crop&q=80&w=600"} className="rounded-[2rem] w-full h-64 object-cover shadow-2xl" alt="Solar 1" />
+              <img src={content?.about_image_2 || "https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?auto=format&fit=crop&q=80&w=600"} className="rounded-[2rem] w-full h-64 object-cover shadow-2xl mt-12" alt="Solar 2" />
             </div>
           </div>
         </div>
@@ -338,7 +337,7 @@ const Home: React.FC = () => {
       </footer>
 
       <a 
-        href="https://wa.me/5500000000000" 
+        href={`https://wa.me/${content?.whatsapp || '5500000000000'}`} 
         target="_blank" 
         rel="noopener noreferrer"
         className="fixed bottom-8 right-8 z-[100] bg-emerald-500 text-white p-4 rounded-full shadow-2xl hover:bg-emerald-600 hover:scale-110 transition-all active:scale-95 group"

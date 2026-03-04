@@ -4,13 +4,14 @@ import {
   Users, Image as ImageIcon, CheckCircle, Trash2, Plus, LogOut, 
   Zap, Home, AlertCircle, Loader2, Key, RefreshCw, 
   Settings, Save, Play, Eye, EyeOff, Edit3, Upload, Film,
-  LayoutDashboard, Globe, FileImage, Layout, Check, Info, ArrowLeft, LayoutGrid
+  LayoutDashboard, Globe, FileImage, Layout, Check, Info, ArrowLeft, LayoutGrid,
+  Copy, Download, Filter, Calendar, DollarSign, CheckCircle2, Search, X
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { isAdmin, ADMIN_EMAILS } from '../constants';
 
-const MASTER_EMAIL = 'pereira.itapema@gmail.com';
 const PLACEHOLDER_IMG = 'https://images.unsplash.com/photo-1509391366360-fe5bb584850a?auto=format&fit=crop&q=80&w=1200';
 
 const Tooltip: React.FC<{ text: string; children: React.ReactNode; position?: 'top' | 'bottom' | 'right' | 'left' }> = ({ text, children, position = 'top' }) => {
@@ -41,13 +42,29 @@ const AdminPanel: React.FC = () => {
   const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('leads');
   const [leads, setLeads] = useState<any[]>([]);
+  const [filteredLeads, setFilteredLeads] = useState<any[]>([]);
+  const [selectedLead, setSelectedLead] = useState<any>(null);
+  
+  // Filtros
+  const [filters, setFilters] = useState({
+    status: 'new',
+    dateStart: '',
+    dateEnd: '',
+    minValue: '',
+    minCommission: '',
+    search: ''
+  });
+
   const [banners, setBanners] = useState<any[]>([]);
   const [apiKeys, setApiKeys] = useState<any[]>([]);
   const [siteContent, setSiteContent] = useState<any>({
     logo_url: '',
     hero_image_url: PLACEHOLDER_IMG,
+    about_image_1: 'https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?auto=format&fit=crop&q=80&w=600',
+    about_image_2: 'https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?auto=format&fit=crop&q=80&w=600',
     hero_title: 'Economize até 30% na sua conta de luz',
-    hero_subtitle: 'Energia solar compartilhada sem investimento.'
+    hero_subtitle: 'Energia solar compartilhada sem investimento.',
+    whatsapp: '5500000000000'
   });
   
   const [isLoading, setIsLoading] = useState(false);
@@ -62,11 +79,52 @@ const AdminPanel: React.FC = () => {
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const heroInputRef = useRef<HTMLInputElement>(null);
+  const about1InputRef = useRef<HTMLInputElement>(null);
+  const about2InputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (user && user.email !== MASTER_EMAIL) navigate('/');
+    if (user && !isAdmin(user.email)) navigate('/');
     fetchData();
   }, [user, activeTab]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [leads, filters]);
+
+  const applyFilters = () => {
+    let result = [...leads];
+
+    if (filters.status) {
+      result = result.filter(l => (l.status || 'new') === filters.status);
+    }
+
+    if (filters.search) {
+      const s = filters.search.toLowerCase();
+      result = result.filter(l => 
+        l.fullName?.toLowerCase().includes(s) || 
+        l.email?.toLowerCase().includes(s) || 
+        l.cpf?.includes(s)
+      );
+    }
+
+    if (filters.dateStart) {
+      result = result.filter(l => new Date(l.created_at) >= new Date(filters.dateStart));
+    }
+
+    if (filters.dateEnd) {
+      result = result.filter(l => new Date(l.created_at) <= new Date(filters.dateEnd));
+    }
+
+    if (filters.minValue) {
+      result = result.filter(l => (l.value || 0) >= parseFloat(filters.minValue));
+    }
+
+    if (filters.minCommission) {
+      result = result.filter(l => (l.commission || 0) >= parseFloat(filters.minCommission));
+    }
+
+    setFilteredLeads(result);
+  };
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -209,6 +267,42 @@ const AdminPanel: React.FC = () => {
     }
   };
 
+  const updateLeadStatus = async (id: string, status: string) => {
+    try {
+      const { error } = await supabase.from('leads').update({ status }).eq('id', id);
+      if (error) throw error;
+      setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l));
+      if (selectedLead?.id === id) setSelectedLead({ ...selectedLead, status });
+      setStatusMsg({ text: `Lead marcado como ${status === 'executed' ? 'executado' : 'novo'}!`, type: 'success' });
+    } catch (err: any) {
+      setStatusMsg({ text: err.message, type: 'error' });
+    }
+  };
+
+  const updateLeadFinance = async (id: string, field: string, value: number) => {
+    try {
+      const { error } = await supabase.from('leads').update({ [field]: value }).eq('id', id);
+      if (error) throw error;
+      setLeads(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l));
+      if (selectedLead?.id === id) setSelectedLead({ ...selectedLead, [field]: value });
+    } catch (err: any) {
+      console.error(err);
+    }
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setStatusMsg({ text: `${label} copiado!`, type: 'success' });
+    setTimeout(() => setStatusMsg(null), 2000);
+  };
+
+  const downloadInvoice = (base64: string, name: string) => {
+    const link = document.createElement('a');
+    link.href = `data:application/octet-stream;base64,${base64}`;
+    link.download = `fatura_${name.replace(/\s+/g, '_')}.png`;
+    link.click();
+  };
+
   const saveSiteContent = async () => {
     setIsLoading(true);
     try {
@@ -278,7 +372,7 @@ const AdminPanel: React.FC = () => {
                 </button>
               )}
             </div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">SISTEMA MASTER • {MASTER_EMAIL}</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">SISTEMA MASTER • {ADMIN_EMAILS.join(' & ')}</p>
           </div>
           {statusMsg && (
             <div className={`p-4 rounded-2xl font-bold text-[10px] uppercase flex items-center gap-3 animate-fadeIn border ${statusMsg.type === 'success' ? 'bg-green-50 border-green-100 text-green-700' : 'bg-red-50 border-red-100 text-red-700'}`}>
@@ -388,30 +482,279 @@ const AdminPanel: React.FC = () => {
         )}
 
         {activeTab === 'leads' && (
-          <div className="bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden animate-fadeIn">
-            {isLoading ? <SkeletonTable /> : (
-              <table className="w-full text-left">
-                <thead className="bg-slate-900 text-white text-[10px] uppercase font-black tracking-widest">
-                  <tr><th className="px-10 py-8">Dados do Cliente</th><th className="px-10 py-8">Contato</th><th className="px-10 py-8 text-right">Data</th></tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {leads.map((l: any) => (
-                    <tr key={l.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-10 py-8">
-                         <p className="font-black text-slate-800 uppercase text-sm tracking-tight italic">{l.fullName}</p>
-                         <p className="text-[10px] text-slate-400 font-bold">{l.email}</p>
-                      </td>
-                      <td className="px-10 py-8">
-                         <a href={`https://wa.me/${l.phone.replace(/[^\d]/g, '')}`} target="_blank" className="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl font-black text-[10px] hover:bg-emerald-600 hover:text-white transition-all inline-flex items-center gap-2">
-                           <Zap size={14} fill="currentColor" /> {l.phone}
-                         </a>
-                      </td>
-                      <td className="px-10 py-8 text-right text-slate-400 text-xs font-bold">{new Date(l.created_at).toLocaleDateString()}</td>
+          <div className="space-y-6 animate-fadeIn">
+            {/* Filtros */}
+            <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
+                <select 
+                  value={filters.status} 
+                  onChange={e => setFilters({...filters, status: e.target.value})}
+                  className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs outline-none focus:border-blue-600"
+                >
+                  <option value="new">Novos</option>
+                  <option value="executed">Executados</option>
+                  <option value="">Todos</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Busca</label>
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input 
+                    type="text" 
+                    placeholder="Nome, CPF..." 
+                    value={filters.search}
+                    onChange={e => setFilters({...filters, search: e.target.value})}
+                    className="w-full p-3 pl-9 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs outline-none focus:border-blue-600"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Valor Mín.</label>
+                <input 
+                  type="number" 
+                  value={filters.minValue}
+                  onChange={e => setFilters({...filters, minValue: e.target.value})}
+                  className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs outline-none focus:border-blue-600"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Comissão Mín.</label>
+                <input 
+                  type="number" 
+                  value={filters.minCommission}
+                  onChange={e => setFilters({...filters, minCommission: e.target.value})}
+                  className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs outline-none focus:border-blue-600"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Início</label>
+                <input 
+                  type="date" 
+                  value={filters.dateStart}
+                  onChange={e => setFilters({...filters, dateStart: e.target.value})}
+                  className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl font-bold text-xs outline-none focus:border-blue-600"
+                />
+              </div>
+              <button 
+                onClick={() => setFilters({ status: 'new', dateStart: '', dateEnd: '', minValue: '', minCommission: '', search: '' })}
+                className="p-3 bg-slate-100 text-slate-500 rounded-xl font-black uppercase text-[10px] hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
+              >
+                <X size={14} /> Limpar
+              </button>
+            </div>
+
+            <div className="bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden">
+              {isLoading ? <SkeletonTable /> : (
+                <table className="w-full text-left">
+                  <thead className="bg-slate-900 text-white text-[10px] uppercase font-black tracking-widest">
+                    <tr>
+                      <th className="px-10 py-8">Cliente</th>
+                      <th className="px-10 py-8">Financeiro</th>
+                      <th className="px-10 py-8">Status</th>
+                      <th className="px-10 py-8 text-right">Ações</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredLeads.map((l: any) => (
+                      <tr key={l.id} className="hover:bg-slate-50 transition-colors group">
+                        <td className="px-10 py-8">
+                           <div className="flex items-center gap-4">
+                             <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 font-black uppercase text-xs">
+                               {l.fullName?.charAt(0)}
+                             </div>
+                             <div>
+                               <p className="font-black text-slate-800 uppercase text-sm tracking-tight italic">{l.fullName}</p>
+                               <p className="text-[10px] text-slate-400 font-bold">{l.cpf} • {new Date(l.created_at).toLocaleDateString()}</p>
+                             </div>
+                           </div>
+                        </td>
+                        <td className="px-10 py-8">
+                           <div className="space-y-1">
+                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor: <span className="text-slate-800">R$ {l.value || 0}</span></p>
+                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Comissão: <span className="text-emerald-600">R$ {l.commission || 0}</span></p>
+                           </div>
+                        </td>
+                        <td className="px-10 py-8">
+                           <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${l.status === 'executed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                             {l.status === 'executed' ? 'Executado' : 'Novo'}
+                           </span>
+                        </td>
+                        <td className="px-10 py-8 text-right">
+                           <div className="flex justify-end gap-2">
+                             <button 
+                               onClick={() => setSelectedLead(l)}
+                               className="p-3 bg-slate-100 text-slate-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                             >
+                               <Eye size={16} />
+                             </button>
+                             {l.status !== 'executed' && (
+                               <button 
+                                 onClick={() => updateLeadStatus(l.id, 'executed')}
+                                 className="p-3 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
+                               >
+                                 <CheckCircle2 size={16} />
+                               </button>
+                             )}
+                           </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Detalhes do Lead */}
+        {selectedLead && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-fadeIn">
+            <div className="bg-white w-full max-w-5xl max-h-[90vh] rounded-[3rem] shadow-2xl overflow-hidden flex flex-col">
+              <div className="p-8 bg-slate-900 text-white flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                    <Users size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-black uppercase italic tracking-tighter">{selectedLead.fullName}</h3>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Lead ID: {selectedLead.id}</p>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedLead(null)} className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-10 grid grid-cols-1 lg:grid-cols-2 gap-12">
+                {/* Coluna 1: Dados para Copiar */}
+                <div className="space-y-8">
+                  <h4 className="font-black text-xs uppercase tracking-widest text-slate-400 border-b pb-4 flex items-center gap-2">
+                    <Copy size={16} /> Dados para Cadastro (Clique para Copiar)
+                  </h4>
+                  
+                  <div className="grid grid-cols-1 gap-4">
+                    {[
+                      { label: 'Nome Completo', value: selectedLead.fullName },
+                      { label: 'CPF', value: selectedLead.cpf },
+                      { label: 'E-mail', value: selectedLead.email },
+                      { label: 'WhatsApp', value: selectedLead.phone },
+                      { label: 'CEP', value: selectedLead.address?.zipCode },
+                      { label: 'Logradouro', value: `${selectedLead.address?.street}, ${selectedLead.address?.number}` },
+                      { label: 'Bairro', value: selectedLead.address?.neighborhood },
+                      { label: 'Cidade/UF', value: `${selectedLead.address?.city} - ${selectedLead.address?.state}` },
+                    ].map((item, i) => (
+                      <div key={i} className="group relative">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-2 mb-1 block">{item.label}</label>
+                        <div 
+                          onClick={() => copyToClipboard(item.value, item.label)}
+                          className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-sm text-slate-700 cursor-pointer hover:bg-blue-50 hover:border-blue-200 transition-all flex justify-between items-center"
+                        >
+                          {item.value}
+                          <Copy size={14} className="text-slate-300 group-hover:text-blue-600" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="p-6 bg-emerald-50 rounded-[2rem] border border-emerald-100 space-y-4">
+                    <h5 className="font-black text-[10px] uppercase tracking-widest text-emerald-700 flex items-center gap-2">
+                      <DollarSign size={14} /> Lançamento Financeiro
+                    </h5>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-emerald-600 uppercase tracking-widest ml-1">Valor da Fatura (R$)</label>
+                        <input 
+                          type="number" 
+                          defaultValue={selectedLead.value}
+                          onBlur={(e) => updateLeadFinance(selectedLead.id, 'value', parseFloat(e.target.value))}
+                          className="w-full p-3 bg-white border border-emerald-200 rounded-xl font-bold text-sm outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-emerald-600 uppercase tracking-widest ml-1">Comissão (R$)</label>
+                        <input 
+                          type="number" 
+                          defaultValue={selectedLead.commission}
+                          onBlur={(e) => updateLeadFinance(selectedLead.id, 'commission', parseFloat(e.target.value))}
+                          className="w-full p-3 bg-white border border-emerald-200 rounded-xl font-bold text-sm outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Coluna 2: Fatura e OCR */}
+                <div className="space-y-8">
+                  <h4 className="font-black text-xs uppercase tracking-widest text-slate-400 border-b pb-4 flex items-center gap-2">
+                    <FileImage size={16} /> Documento e OCR
+                  </h4>
+
+                  {selectedLead.faturaBase64 ? (
+                    <div className="space-y-4">
+                      <div className="relative aspect-[3/4] bg-slate-100 rounded-[2.5rem] overflow-hidden border-8 border-slate-50 shadow-inner group">
+                        <img 
+                          src={`data:image/png;base64,${selectedLead.faturaBase64}`} 
+                          className="w-full h-full object-contain" 
+                          alt="Fatura" 
+                        />
+                        <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                          <button 
+                            onClick={() => downloadInvoice(selectedLead.faturaBase64, selectedLead.fullName)}
+                            className="px-8 py-4 bg-white text-slate-900 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center gap-3 shadow-2xl hover:scale-105 transition-all"
+                          >
+                            <Download size={18} /> Baixar Fatura
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="aspect-[3/4] bg-slate-50 rounded-[2.5rem] border-4 border-dashed border-slate-100 flex flex-col items-center justify-center text-slate-300 gap-4">
+                      <FileImage size={48} />
+                      <p className="font-black uppercase text-[10px] tracking-widest">Nenhuma imagem enviada</p>
+                    </div>
+                  )}
+
+                  {selectedLead.extracted && (
+                    <div className="p-6 bg-blue-50 rounded-[2rem] border border-blue-100 space-y-4">
+                      <h5 className="font-black text-[10px] uppercase tracking-widest text-blue-700 flex items-center gap-2">
+                        <Zap size={14} fill="currentColor" /> Dados Extraídos via OCR
+                      </h5>
+                      <div className="bg-white/50 p-4 rounded-xl font-mono text-[10px] text-blue-800 whitespace-pre-wrap leading-relaxed">
+                        {JSON.stringify(selectedLead.extracted, null, 2)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+                <button 
+                  onClick={() => { if(confirm('Apagar lead?')) { supabase.from('leads').delete().eq('id', selectedLead.id).then(() => { fetchData(); setSelectedLead(null); }); } }}
+                  className="px-8 py-4 text-red-500 font-black uppercase text-[10px] tracking-widest hover:bg-red-50 rounded-2xl transition-all"
+                >
+                  Excluir Lead
+                </button>
+                <div className="flex gap-4">
+                  {selectedLead.status !== 'executed' ? (
+                    <button 
+                      onClick={() => updateLeadStatus(selectedLead.id, 'executed')}
+                      className="px-12 py-5 bg-emerald-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-95 flex items-center gap-3"
+                    >
+                      <CheckCircle2 size={18} /> Marcar como Executado
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => updateLeadStatus(selectedLead.id, 'new')}
+                      className="px-12 py-5 bg-blue-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-blue-600/20 hover:bg-blue-700 transition-all active:scale-95 flex items-center gap-3"
+                    >
+                      <RefreshCw size={18} /> Reabrir Lead
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
@@ -517,6 +860,36 @@ const AdminPanel: React.FC = () => {
                        }
                      }} />
                   </div>
+                  <div className="p-8 border-4 border-dashed border-slate-50 rounded-[2.5rem] flex flex-col items-center gap-6 bg-slate-50 hover:border-blue-100 transition-all group">
+                     <img src={siteContent.about_image_1} className="w-full aspect-square object-cover rounded-[2rem] shadow-2xl" alt="About 1" />
+                     <Tooltip text="Alterar a primeira imagem da seção Sobre" position="top">
+                      <button onClick={() => about1InputRef.current?.click()} className="px-6 py-3 bg-white text-blue-600 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl border border-blue-50 hover:bg-blue-600 hover:text-white transition-all active:scale-95">Alterar Sobre 1</button>
+                     </Tooltip>
+                     <input type="file" ref={about1InputRef} className="hidden" onChange={async (e) => {
+                       const file = e.target.files?.[0]; if(file) {
+                         const reader = new FileReader();
+                         reader.onload = () => {
+                           setSiteContent({...siteContent, about_image_1: reader.result as string});
+                         };
+                         reader.readAsDataURL(file);
+                       }
+                     }} />
+                  </div>
+                  <div className="p-8 border-4 border-dashed border-slate-50 rounded-[2.5rem] flex flex-col items-center gap-6 bg-slate-50 hover:border-blue-100 transition-all group">
+                     <img src={siteContent.about_image_2} className="w-full aspect-square object-cover rounded-[2rem] shadow-2xl" alt="About 2" />
+                     <Tooltip text="Alterar a segunda imagem da seção Sobre" position="top">
+                      <button onClick={() => about2InputRef.current?.click()} className="px-6 py-3 bg-white text-blue-600 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl border border-blue-50 hover:bg-blue-600 hover:text-white transition-all active:scale-95">Alterar Sobre 2</button>
+                     </Tooltip>
+                     <input type="file" ref={about2InputRef} className="hidden" onChange={async (e) => {
+                       const file = e.target.files?.[0]; if(file) {
+                         const reader = new FileReader();
+                         reader.onload = () => {
+                           setSiteContent({...siteContent, about_image_2: reader.result as string});
+                         };
+                         reader.readAsDataURL(file);
+                       }
+                     }} />
+                  </div>
                 </div>
               </div>
               <div className="space-y-8">
@@ -529,6 +902,10 @@ const AdminPanel: React.FC = () => {
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Texto Explicativo</label>
                     <textarea value={siteContent.hero_subtitle} onChange={e => setSiteContent({...siteContent, hero_subtitle: e.target.value})} className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] font-bold h-40 resize-none outline-none focus:border-blue-600 transition-all text-sm leading-relaxed" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">WhatsApp (Dígitos)</label>
+                    <input type="text" value={siteContent.whatsapp} onChange={e => setSiteContent({...siteContent, whatsapp: e.target.value})} className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] font-bold outline-none focus:border-blue-600 transition-all text-sm" placeholder="Ex: 5511999999999" />
                   </div>
                 </div>
               </div>
