@@ -27,6 +27,10 @@ const AuthGate: React.FC = () => {
       
       console.log(`Log: checkRedirection - User: ${sessionUser?.email}, isMaster: ${isMaster}, isAuthPage: ${isAuthPage}`);
       
+      if (sessionUser && !isMaster) {
+        console.warn(`Log: Usuário ${sessionUser.email} logado, mas NÃO é admin.`);
+      }
+      
       if (isMaster && isAuthPage) {
         console.log("Log: Admin Master detectado, redirecionando para /admin");
         navigate('/admin', { replace: true });

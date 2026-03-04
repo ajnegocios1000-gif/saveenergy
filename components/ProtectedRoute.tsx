@@ -24,6 +24,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   // 2. Se não houver usuário ou não for o master
   if (!user || !isAdmin(user.email)) {
+    console.log(`Log: Acesso negado para ${user?.email || 'Visitante'}`);
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-white rounded-[3rem] shadow-2xl border border-slate-100 p-12 text-center space-y-8 animate-fadeIn">
@@ -35,11 +36,18 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
           
           <div className="space-y-3">
             <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tighter italic leading-none">Acesso <span className="text-red-600">Restrito</span></h2>
-            <p className="text-slate-500 text-sm font-medium leading-relaxed">
-              {user 
-                ? `O e-mail ${user.email} não possui privilégios de administrador.` 
-                : 'Nenhuma sessão administrativa encontrada no navegador.'}
-            </p>
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <p className="text-slate-500 text-xs font-bold leading-relaxed">
+                {user 
+                  ? `O e-mail "${user.email}" não está na lista de administradores autorizados.` 
+                  : 'Nenhuma sessão administrativa encontrada no navegador.'}
+              </p>
+              {user && (
+                <p className="text-[9px] text-slate-400 mt-2 uppercase font-black tracking-widest">
+                  Verifique se este é o e-mail correto do seu login Google.
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="pt-4 flex flex-col gap-4">

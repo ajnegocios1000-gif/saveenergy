@@ -65,17 +65,13 @@ const cleanKey = supabaseAnonKey || '';
 // Detect if user swapped URL and Key
 const isSwapped = cleanUrl.startsWith('eyJ') || cleanKey.startsWith('http');
 
-console.log('Log: Supabase Client Config - URL:', isValidUrl(cleanUrl) ? 'OK' : (cleanUrl ? `INVALID FORMAT (${cleanUrl.substring(0, 10)}...)` : 'MISSING'));
-console.log('Log: Supabase Client Config - KEY:', cleanKey ? 'OK' : 'MISSING');
-if (isSwapped) console.error('Log: ALERTA - Parece que você inverteu a URL e a KEY do Supabase!');
-
 const isConfigured = isValidUrl(cleanUrl) && !!cleanKey && !isSwapped;
 
 const getErrorMessage = () => {
   if (isSwapped) return '⚠️ ALERTA: Você inverteu as chaves! Coloque a URL no campo VITE_SUPABASE_URL e a Key no campo VITE_SUPABASE_ANON_KEY.';
-  if (!cleanUrl || !cleanKey) return 'Supabase não configurado. Por favor, configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY nas variáveis de ambiente do AI Studio.';
-  if (!isValidUrl(cleanUrl)) return `URL do Supabase inválida: "${cleanUrl.substring(0, 20)}...". Certifique-se de que começa com https://`;
-  return 'Erro desconhecido na configuração do Supabase.';
+  if (!cleanUrl || !cleanKey) return 'Supabase não configurado. Por favor, configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY nas variáveis de ambiente.';
+  if (!isValidUrl(cleanUrl)) return `URL do Supabase inválida. Certifique-se de que começa com https://`;
+  return 'Erro de conexão com o banco de dados.';
 };
 
 // Mock de fallback para evitar erros de "Cannot read properties of null" antes da inicialização
