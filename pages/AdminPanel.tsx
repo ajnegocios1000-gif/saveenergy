@@ -453,7 +453,7 @@ const AdminPanel: React.FC = () => {
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-3">
                            <h4 className="font-black text-slate-800 uppercase italic tracking-tighter text-lg">{k.provider}</h4>
-                           <div className={`w-2 h-2 rounded-full ${statusColor} animate-pulse`}></div>
+                           <div className={`w-3 h-3 rounded-full ${statusColor} animate-pulse shadow-lg`}></div>
                         </div>
                         <div className="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
                            <p className="text-[10px] font-bold text-slate-400 font-mono">
@@ -463,6 +463,11 @@ const AdminPanel: React.FC = () => {
                              {isVisible ? <EyeOff size={14} /> : <Eye size={14} />}
                            </button>
                         </div>
+                        <p className="text-[8px] font-black uppercase tracking-widest mt-1">
+                          Status: <span className={k.status === 'active' ? 'text-green-600' : k.status === 'no_credit' ? 'text-amber-600' : 'text-red-600'}>
+                            {k.status === 'active' ? 'Conectada (OK)' : k.status === 'no_credit' ? 'Sem Crédito' : 'Desconectada/Erro'}
+                          </span>
+                        </p>
                       </div>
                       
                       <div className="flex gap-2">
@@ -575,7 +580,7 @@ const AdminPanel: React.FC = () => {
                              </div>
                              <div>
                                <p className="font-black text-slate-800 uppercase text-sm tracking-tight italic">{l.fullName}</p>
-                               <p className="text-[10px] text-slate-400 font-bold">{l.cpf} • {new Date(l.created_at).toLocaleDateString()}</p>
+                               <p className="text-[10px] text-slate-400 font-bold">{l.cpf} • UC: {l.consumerUnit || 'N/A'} • {new Date(l.created_at).toLocaleDateString()}</p>
                              </div>
                            </div>
                         </td>
@@ -647,6 +652,7 @@ const AdminPanel: React.FC = () => {
                     {[
                       { label: 'Nome Completo', value: selectedLead.fullName },
                       { label: 'CPF', value: selectedLead.cpf },
+                      { label: 'Unidade Consumidora (UC)', value: selectedLead.consumerUnit },
                       { label: 'E-mail', value: selectedLead.email },
                       { label: 'WhatsApp', value: selectedLead.phone },
                       { label: 'CEP', value: selectedLead.address?.zipCode },

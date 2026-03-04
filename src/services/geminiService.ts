@@ -66,6 +66,8 @@ export async function analyzeBill(imageBase64: string, mimeType: string) {
       type: Type.OBJECT,
       properties: {
         nome: { type: Type.STRING, description: "Nome completo do titular" },
+        cpf: { type: Type.STRING, description: "CPF do titular se disponível" },
+        unidade_consumidora: { type: Type.STRING, description: "Número da Unidade Consumidora (UC)" },
         logradouro: { type: Type.STRING, description: "Rua/Avenida" },
         bairro: { type: Type.STRING },
         cidade: { type: Type.STRING },

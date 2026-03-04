@@ -21,7 +21,6 @@ const validateCPF = (cpf: string) => {
 };
 
 const RegistrationForm: React.FC = () => {
-  const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState('');
   const [loadingProgress, setLoadingProgress] = useState(0);
@@ -30,9 +29,9 @@ const RegistrationForm: React.FC = () => {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
-    confirmEmail: '',
     phone: '',
     cpf: '',
+    consumerUnit: '',
     address: {
       zipCode: '',
       street: '',
@@ -83,9 +82,8 @@ const RegistrationForm: React.FC = () => {
     }
   };
 
-  // Fixed progress bar logic to avoid hanging
   const runExtraction = async (selectedFile: File, base64: string) => {
-    setLoadingStage('Iniciando análise Lexi...');
+    setLoadingStage('Lexi analisando fatura...');
     setLoadingProgress(40);
     
     try {
@@ -99,6 +97,8 @@ const RegistrationForm: React.FC = () => {
         setFormData(prev => ({
           ...prev,
           fullName: data.nome || prev.fullName,
+          cpf: data.cpf || prev.cpf,
+          consumerUnit: data.unidade_consumidora || prev.consumerUnit,
           address: {
             ...prev.address,
             street: data.logradouro || prev.address.street,
@@ -108,15 +108,15 @@ const RegistrationForm: React.FC = () => {
             zipCode: data.cep?.replace(/[^\d]/g, '') || prev.address.zipCode
           }
         }));
-        setTimeout(() => { setIsLoading(false); setStep(2); }, 800);
+        setTimeout(() => { setIsLoading(false); }, 800);
       } else {
-        setErrors({ file: "Fatura ilegível ou dados não encontrados. Tente uma foto mais nítida." });
+        setErrors({ file: "Fatura ilegível. Tente uma foto mais nítida." });
         setFile(null);
         setIsLoading(false);
       }
     } catch (err) {
       console.error("Erro na extração:", err);
-      setErrors({ file: "Houve um problema técnico na análise. Tente novamente ou preencha manualmente." });
+      setErrors({ file: "Erro técnico na análise. Preencha manualmente." });
       setIsLoading(false);
     }
   };
@@ -127,7 +127,7 @@ const RegistrationForm: React.FC = () => {
     setFile(selectedFile);
     setIsLoading(true);
     setLoadingProgress(10);
-    setLoadingStage('Preparando arquivo...');
+    setLoadingStage('Processando arquivo...');
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -139,32 +139,26 @@ const RegistrationForm: React.FC = () => {
     reader.readAsDataURL(selectedFile);
   };
 
-  const validateStep = () => {
+  const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    if (step === 2) {
-      if (!formData.fullName) newErrors.fullName = "Nome obrigatório";
-      if (!validateCPF(formData.cpf)) newErrors.cpf = "CPF inválido";
-      if (!formData.email) newErrors.email = "E-mail obrigatório";
-      if (formData.email !== formData.confirmEmail) newErrors.confirmEmail = "E-mails não batem";
-      if (!formData.phone) newErrors.phone = "WhatsApp obrigatório";
-    }
-    if (step === 3) {
-      if (!formData.address.zipCode) newErrors.zipCode = "CEP obrigatório";
-      if (!formData.address.number) newErrors.number = "Nº obrigatório";
-    }
+    if (!formData.fullName) newErrors.fullName = "Obrigatório";
+    if (!validateCPF(formData.cpf)) newErrors.cpf = "CPF inválido";
+    if (!formData.email) newErrors.email = "Obrigatório";
+    if (!formData.phone) newErrors.phone = "Obrigatório";
+    if (!formData.consumerUnit) newErrors.consumerUnit = "Obrigatório";
+    if (!formData.address.zipCode) newErrors.zipCode = "Obrigatório";
+    if (!formData.address.number) newErrors.number = "Obrigatório";
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = () => { if (validateStep()) setStep(s => s + 1); };
-  const handleBack = () => { if (step > 1) setStep(s => s - 1); };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateStep()) return;
+    if (!validateForm()) return;
     
     setIsLoading(true);
-    setLoadingStage('Salvando seu cadastro...');
+    setLoadingStage('Enviando cadastro...');
     
     try {
       await fetch('/api/leads', {
@@ -174,7 +168,7 @@ const RegistrationForm: React.FC = () => {
       });
       setIsSubmitted(true);
     } catch (err) {
-      alert('Erro ao salvar cadastro. Tente novamente.');
+      alert('Erro ao salvar. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -198,26 +192,13 @@ const RegistrationForm: React.FC = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-6 px-2">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className={`flex items-center ${i < 4 ? 'flex-1' : ''}`}>
-              <div className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center font-black text-sm md:text-lg transition-all shadow-sm ${step >= i ? 'bg-green-600 text-white' : 'bg-slate-100 text-slate-300'}`}>
-                {i}
-              </div>
-              {i < 4 && <div className={`h-1.5 flex-1 mx-2 md:mx-3 rounded-full transition-all ${step > i ? 'bg-green-600' : 'bg-slate-100'}`} />}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-white p-6 md:p-10 rounded-3xl shadow-2xl border border-slate-50 relative overflow-hidden min-h-[450px]">
+    <div className="max-w-4xl mx-auto">
+      <div className="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-2xl border border-slate-50 relative overflow-hidden">
         {isLoading && (
           <div className="absolute inset-0 bg-slate-900/95 z-50 flex flex-col items-center justify-center p-8 backdrop-blur-sm">
             <div className="relative mb-8">
                <div className="absolute inset-0 bg-green-500/20 blur-3xl rounded-full scale-150 animate-pulse"></div>
-               <div className="relative bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-2xl overflow-hidden">
+               <div className="relative bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-2xl">
                  <div className="flex gap-4">
                     <div className={`p-3 rounded-xl ${loadingProgress > 25 ? 'bg-green-600 text-white' : 'bg-slate-700 text-slate-400'} transition-all duration-500`}>
                       <ScanLine size={24} />
@@ -235,129 +216,120 @@ const RegistrationForm: React.FC = () => {
             <div className="w-full max-w-xs bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
                <div className="h-full bg-green-500 transition-all duration-300 ease-out" style={{ width: `${loadingProgress}%` }} />
             </div>
-            <span className="mt-2 text-green-500 font-black text-xs">{Math.round(loadingProgress)}%</span>
           </div>
         )}
 
-        {step === 1 && (
-          <div className="space-y-6 animate-fadeIn">
-            <div className="text-center mb-4">
-              <h3 className="text-2xl font-black text-slate-800">Inicie pela Fatura</h3>
-              <p className="text-slate-500">Nossa IA Lexi vai ler os dados por você.</p>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Upload Section */}
+          <div className="lg:col-span-4 space-y-6">
+            <div className="text-left">
+              <h3 className="text-xl font-black text-slate-800 uppercase tracking-tighter italic">Passo 1: Fatura</h3>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Análise Automática Lexi</p>
             </div>
-            <div onClick={() => document.getElementById('bill-upload')?.click()} className={`border-3 border-dashed rounded-3xl p-10 md:p-16 flex flex-col items-center gap-6 cursor-pointer transition-all ${file ? 'border-green-600 bg-green-50' : 'border-slate-300 bg-slate-50 hover:border-green-400'}`}>
-              <div className={`p-8 rounded-2xl shadow-xl bg-white text-slate-400 ${file ? 'text-green-600' : ''}`}>
-                <Upload size={48} />
+            
+            <div 
+              onClick={() => document.getElementById('bill-upload')?.click()} 
+              className={`border-2 border-dashed rounded-3xl p-6 flex flex-col items-center gap-4 cursor-pointer transition-all ${file ? 'border-green-600 bg-green-50' : 'border-slate-200 bg-slate-50 hover:border-green-400'}`}
+            >
+              <div className={`p-4 rounded-2xl shadow-sm bg-white text-slate-300 ${file ? 'text-green-600' : ''}`}>
+                <Upload size={32} />
               </div>
               <div className="text-center">
-                <p className="font-black text-xl text-slate-800">{file ? file.name : "Toque para enviar Fatura"}</p>
-                <p className="text-sm text-slate-400 mt-2 font-medium">Aceitamos Fotos nítidas ou PDF digital.</p>
+                <p className="font-black text-xs text-slate-800 uppercase tracking-tight">{file ? file.name : "Carregar Fatura"}</p>
+                <p className="text-[9px] text-slate-400 mt-1 font-bold uppercase">Foto ou PDF</p>
               </div>
               <input id="bill-upload" type="file" className="hidden" accept=".pdf,image/*" onChange={handleFileUpload} />
             </div>
-            {errors.file && <div className="p-4 bg-red-50 text-red-600 text-sm rounded-2xl flex items-center gap-3 border border-red-100 font-bold"><AlertCircle size={20} /> {errors.file}</div>}
+            
+            {errors.file && <div className="p-3 bg-red-50 text-red-600 text-[10px] rounded-xl flex items-center gap-2 border border-red-100 font-black uppercase tracking-widest"><AlertCircle size={14} /> {errors.file}</div>}
+            
+            <div className="p-4 bg-slate-900 rounded-2xl space-y-3">
+              <h4 className="text-green-400 font-black text-[10px] uppercase tracking-widest border-b border-white/10 pb-2">Benefícios</h4>
+              <ul className="text-[9px] text-slate-300 space-y-2 font-bold uppercase tracking-wider">
+                <li className="flex items-center gap-2"><Zap size={10} className="text-green-400" /> Desconto de até 20%</li>
+                <li className="flex items-center gap-2"><Zap size={10} className="text-green-400" /> Sem Investimento</li>
+                <li className="flex items-center gap-2"><Zap size={10} className="text-green-400" /> Ativação em 60 dias</li>
+              </ul>
+            </div>
           </div>
-        )}
 
-        {step === 2 && (
-          <div className="space-y-4 animate-fadeIn">
-            <div className="p-4 bg-green-50 text-green-700 text-[10px] rounded-xl font-black flex items-center gap-2 mb-2 border border-green-100 uppercase tracking-widest">
-              <CheckCircle2 size={16} /> Verificação via Plataforma Lex Concluída
+          {/* Form Section */}
+          <form onSubmit={handleSubmit} className="lg:col-span-8 space-y-6">
+            <div className="text-left border-b border-slate-100 pb-4">
+              <h3 className="text-xl font-black text-slate-800 uppercase tracking-tighter italic">Passo 2: Cadastro</h3>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Confirme os dados extraídos</p>
             </div>
-            <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Nome Completo</label>
-              <input type="text" value={formData.fullName} onChange={e => updateFormData('fullName', e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-green-500/10 font-bold text-slate-700" />
-              {errors.fullName && <p className="text-[10px] text-red-500 mt-1 font-black">{errors.fullName}</p>}
-            </div>
-            <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">CPF</label>
-              <input type="text" value={formData.cpf} onChange={e => updateFormData('cpf', e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-green-500/10 font-bold" placeholder="000.000.000-00" />
-              {errors.cpf && <p className="text-[10px] text-red-500 mt-1 font-black">{errors.cpf}</p>}
-            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">E-mail</label>
-                <input type="email" value={formData.email} onChange={e => updateFormData('email', e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold" />
-                {errors.email && <p className="text-[10px] text-red-500 mt-1 font-black">{errors.email}</p>}
+              <div className="md:col-span-2">
+                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">Nome Completo</label>
+                <input type="text" value={formData.fullName} onChange={e => updateFormData('fullName', e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-green-500 transition-all font-bold text-slate-700 text-sm" />
+                {errors.fullName && <p className="text-[9px] text-red-500 mt-1 font-black uppercase ml-1">{errors.fullName}</p>}
               </div>
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Confirmar E-mail</label>
-                <input type="email" value={formData.confirmEmail} onChange={e => updateFormData('confirmEmail', e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold" />
-                {errors.confirmEmail && <p className="text-[10px] text-red-500 mt-1 font-black">{errors.confirmEmail}</p>}
-              </div>
-            </div>
-            <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">WhatsApp</label>
-              <input type="tel" value={formData.phone} onChange={e => updateFormData('phone', e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold" placeholder="(00) 90000-0000" />
-              {errors.phone && <p className="text-[10px] text-red-500 mt-1 font-black">{errors.phone}</p>}
-            </div>
-          </div>
-        )}
 
-        {step === 3 && (
-          <div className="space-y-5 animate-fadeIn">
-             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">CEP (Busca Automática)</label>
-              <input type="text" value={formData.address.zipCode} onChange={e => handleCEP(e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-bold" placeholder="00000-000" maxLength={9} />
-              {errors.zipCode && <p className="text-[10px] text-red-500 mt-1 font-black">{errors.zipCode}</p>}
-            </div>
-            <div className="grid grid-cols-4 gap-4">
-              <div className="col-span-3">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Rua/Logradouro</label>
-                <input type="text" value={formData.address.street} onChange={e => updateFormData('address.street', e.target.value)} className="w-full px-5 py-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold" />
-              </div>
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Nº</label>
-                <input type="text" value={formData.address.number} onChange={e => updateFormData('address.number', e.target.value)} className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold" />
-                {errors.number && <p className="text-[10px] text-red-500 mt-1 font-black">{errors.number}</p>}
+                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">CPF</label>
+                <input type="text" value={formData.cpf} onChange={e => updateFormData('cpf', e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-green-500 transition-all font-bold text-sm" placeholder="000.000.000-00" />
+                {errors.cpf && <p className="text-[9px] text-red-500 mt-1 font-black uppercase ml-1">{errors.cpf}</p>}
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">Unidade Consumidora (UC)</label>
+                <input type="text" value={formData.consumerUnit} onChange={e => updateFormData('consumerUnit', e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-green-500 transition-all font-bold text-sm" placeholder="Nº da UC na fatura" />
+                {errors.consumerUnit && <p className="text-[9px] text-red-500 mt-1 font-black uppercase ml-1">{errors.consumerUnit}</p>}
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">E-mail</label>
+                <input type="email" value={formData.email} onChange={e => updateFormData('email', e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-green-500 transition-all font-bold text-sm" />
+                {errors.email && <p className="text-[9px] text-red-500 mt-1 font-black uppercase ml-1">{errors.email}</p>}
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">WhatsApp</label>
+                <input type="tel" value={formData.phone} onChange={e => updateFormData('phone', e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-green-500 transition-all font-bold text-sm" placeholder="(00) 90000-0000" />
+                {errors.phone && <p className="text-[9px] text-red-500 mt-1 font-black uppercase ml-1">{errors.phone}</p>}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Bairro</label>
-                <input type="text" value={formData.address.neighborhood} onChange={e => updateFormData('address.neighborhood', e.target.value)} className="w-full px-5 py-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold" />
+
+            <div className="space-y-4 pt-4 border-t border-slate-100">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">CEP</label>
+                  <input type="text" value={formData.address.zipCode} onChange={e => handleCEP(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-green-500 transition-all font-bold text-sm" placeholder="00000-000" maxLength={9} />
+                  {errors.zipCode && <p className="text-[9px] text-red-500 mt-1 font-black uppercase ml-1">{errors.zipCode}</p>}
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">Rua/Logradouro</label>
+                  <input type="text" value={formData.address.street} onChange={e => updateFormData('address.street', e.target.value)} className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl font-bold text-sm" />
+                </div>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="col-span-2">
-                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Cidade</label>
-                   <input type="text" value={formData.address.city} readOnly className="w-full px-5 py-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold text-slate-500" />
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">Nº</label>
+                  <input type="text" value={formData.address.number} onChange={e => updateFormData('address.number', e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm" />
+                  {errors.number && <p className="text-[9px] text-red-500 mt-1 font-black uppercase ml-1">{errors.number}</p>}
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">Bairro</label>
+                  <input type="text" value={formData.address.neighborhood} onChange={e => updateFormData('address.neighborhood', e.target.value)} className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl font-bold text-sm" />
                 </div>
                 <div>
-                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">UF</label>
-                   <input type="text" value={formData.address.state} readOnly className="w-full px-5 py-4 bg-slate-100 border border-slate-200 rounded-2xl font-bold text-slate-500" />
+                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">UF</label>
+                  <input type="text" value={formData.address.state} readOnly className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl font-bold text-slate-500 text-sm" />
                 </div>
               </div>
             </div>
-          </div>
-        )}
 
-        {step === 4 && (
-          <div className="space-y-6 animate-fadeIn">
-            <div className="bg-slate-900 text-white p-8 rounded-3xl space-y-6 shadow-2xl">
-              <h4 className="text-green-400 font-black text-xs uppercase tracking-widest border-b border-white/10 pb-4">Check-out Final SAVE ENERGY</h4>
-              <div className="text-sm space-y-4">
-                 <p className="flex justify-between items-center"><span className="text-slate-400 uppercase text-[10px]">Titular:</span> <span className="font-bold">{formData.fullName}</span></p>
-                 <p className="flex justify-between items-center"><span className="text-slate-400 uppercase text-[10px]">CPF:</span> <span className="font-bold">{formData.cpf}</span></p>
-                 <p className="flex justify-between items-center"><span className="text-slate-400 uppercase text-[10px]">Economia Estimada:</span> <span className="text-green-400 font-black text-lg">15% a 20%</span></p>
-                 <p className="flex justify-between items-center"><span className="text-slate-400 uppercase text-[10px]">Plataforma:</span> <span className="bg-green-600 px-3 py-1 rounded-full text-[10px] font-black">LEX DIGITAL</span></p>
-              </div>
-            </div>
-            <p className="text-[10px] text-slate-400 text-center uppercase font-black tracking-widest leading-relaxed">
-              Ao confirmar, seus dados serão criptografados e enviados para validação contratual.
+            <button type="submit" className="w-full py-5 bg-green-600 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-2xl hover:bg-green-700 transition-all active:scale-95 flex items-center justify-center gap-3">
+              <ShieldCheck size={20} /> Finalizar e Economizar
+            </button>
+            
+            <p className="text-[8px] text-slate-400 text-center uppercase font-black tracking-[0.2em]">
+              Seus dados estão protegidos pela LGPD e criptografia de ponta a ponta.
             </p>
-          </div>
-        )}
-
-        <div className="flex justify-between items-center pt-8">
-          {step > 1 ? (
-            <button onClick={handleBack} className="text-slate-500 font-black uppercase text-[10px] tracking-widest flex items-center gap-2 hover:text-green-600 transition-colors"><ChevronLeft size={16} /> Voltar</button>
-          ) : <div />}
-          
-          {step < 4 ? (
-            <button onClick={handleNext} className="bg-green-600 text-white px-10 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl hover:bg-green-700 transition-all flex items-center gap-2">Continuar <ChevronRight size={16} /></button>
-          ) : (
-            <button onClick={handleSubmit} className="bg-green-600 text-white px-12 py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-2xl hover:bg-green-700 transition-all scale-105 active:scale-95">Finalizar e Economizar</button>
-          )}
+          </form>
         </div>
       </div>
     </div>
