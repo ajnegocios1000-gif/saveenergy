@@ -52,7 +52,9 @@ const Login: React.FC = () => {
     try {
       await signInWithGoogle();
     } catch (err: any) {
-      if (err.message?.includes("provider is not enabled")) {
+      if (err.message?.includes("Supabase não configurado")) {
+        setError(err.message);
+      } else if (err.message?.includes("provider is not enabled")) {
         setError("Erro: O login via Google não está ativado no painel do Supabase.");
       } else {
         setError("Falha ao conectar com o Google. Tente login manual.");

@@ -25,6 +25,8 @@ const AuthGate: React.FC = () => {
       const isMaster = isAdmin(sessionUser?.email);
       const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
       
+      console.log(`Log: checkRedirection - User: ${sessionUser?.email}, isMaster: ${isMaster}, isAuthPage: ${isAuthPage}`);
+      
       if (isMaster && isAuthPage) {
         console.log("Log: Admin Master detectado, redirecionando para /admin");
         navigate('/admin', { replace: true });
@@ -34,6 +36,7 @@ const AuthGate: React.FC = () => {
 
     // Checagem inicial
     if (!loading) {
+      console.log(`Log: AuthGate inicial - User: ${user?.email}, loading: ${loading}`);
       checkRedirection(user);
     }
 

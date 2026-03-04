@@ -3,5 +3,6 @@ export const ADMIN_EMAILS = ['pereira.itapema@gmail.com', 'ajnegocios1000@gmail.
 
 export const isAdmin = (email: string | undefined | null) => {
   if (!email) return false;
-  return ADMIN_EMAILS.includes(email);
+  const lowerEmail = email.toLowerCase();
+  return ADMIN_EMAILS.some(adminEmail => adminEmail.toLowerCase() === lowerEmail);
 };

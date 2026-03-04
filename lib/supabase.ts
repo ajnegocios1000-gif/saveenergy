@@ -29,6 +29,7 @@ const supabaseMock = {
     onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
     getSession: async () => ({ data: { session: null }, error: null }),
     signInWithPassword: async () => ({ data: { user: null, session: null }, error: new Error('Supabase não configurado. Por favor, configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY nas variáveis de ambiente do AI Studio.') }),
+    signInWithOAuth: async () => ({ data: { user: null, session: null }, error: new Error('Supabase não configurado. Por favor, configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY nas variáveis de ambiente do AI Studio.') }),
     updateUser: async () => ({ data: { user: null }, error: new Error('Supabase não configurado. Por favor, configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY nas variáveis de ambiente do AI Studio.') }),
     signOut: async () => ({ error: null }),
   },
