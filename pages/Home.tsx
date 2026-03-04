@@ -194,7 +194,9 @@ const Home: React.FC = () => {
               </p>
               <div className="flex flex-col sm:flex-row items-center gap-6">
                 <Link to="/register" className="w-full sm:w-auto px-12 py-6 bg-emerald-600 text-white font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-emerald-700 shadow-2xl flex items-center justify-center gap-3"><Rocket size={18} /> Cadastrar Agora</Link>
-                <Link to="/chat" className="w-full sm:w-auto px-12 py-6 bg-white border-2 border-emerald-600 text-emerald-600 font-black uppercase text-xs tracking-widest rounded-2xl flex items-center justify-center gap-3 hover:bg-emerald-50 transition-all"><MessageSquare size={18} /> Tire suas Dúvidas</Link>
+                {content?.show_specialist_btn !== false && (
+                  <Link to="/chat" className="w-full sm:w-auto px-12 py-6 bg-white border-2 border-emerald-600 text-emerald-600 font-black uppercase text-xs tracking-widest rounded-2xl flex items-center justify-center gap-3 hover:bg-emerald-50 transition-all"><MessageSquare size={18} /> Tire suas Dúvidas</Link>
+                )}
               </div>
             </div>
             <div className="flex-1 w-full relative">
@@ -346,17 +348,19 @@ const Home: React.FC = () => {
         <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">© 2026 SAVE ENERGY • TODOS OS DIREITOS RESERVADOS</p>
       </footer>
 
-      <a 
-        href={`https://wa.me/${content?.whatsapp || '5500000000000'}`} 
-        target="_blank" 
-        rel="noopener noreferrer"
-        className="fixed bottom-8 right-8 z-[100] bg-emerald-500 text-white p-4 rounded-full shadow-2xl hover:bg-emerald-600 hover:scale-110 transition-all active:scale-95 group"
-      >
-        <MessageCircle size={32} fill="currentColor" />
-        <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-          Fale com um consultor
-        </span>
-      </a>
+      {content?.show_whatsapp !== false && (
+        <a 
+          href={`https://wa.me/${content?.whatsapp || '5500000000000'}`} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="fixed bottom-8 right-8 z-[100] bg-emerald-500 text-white p-4 rounded-full shadow-2xl hover:bg-emerald-600 hover:scale-110 transition-all active:scale-95 group"
+        >
+          <MessageCircle size={32} fill="currentColor" />
+          <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+            Fale com um consultor
+          </span>
+        </a>
+      )}
 
       {isAdmin(user?.email) && (
         <Link 

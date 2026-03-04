@@ -13,6 +13,7 @@ const ChatInterface: React.FC = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [profile, setProfile] = useState<{ full_name: string, whatsapp: string } | null>(null);
+  const [settings, setSettings] = useState<any>(null);
   const [showProfileForm, setShowProfileForm] = useState(false);
   const [tempProfile, setTempProfile] = useState({ full_name: '', whatsapp: '' });
   
@@ -23,8 +24,14 @@ const ChatInterface: React.FC = () => {
     if (user) {
       fetchProfile();
       loadChatHistory();
+      fetchSettings();
     }
   }, [user]);
+
+  const fetchSettings = async () => {
+    const { data } = await supabase.from('site_content').select('*').maybeSingle();
+    if (data) setSettings(data);
+  };
 
   const fetchProfile = async () => {
     const { data, error } = await supabase.from('profiles').select('*').eq('id', user?.id).maybeSingle();
@@ -150,7 +157,7 @@ Com base nesses dados, posso te ajudar a economizar até 20% na sua conta. Gosta
     setIsLoading(true);
 
     try {
-      const text = await getGeminiResponse(input, messages);
+      const text = await getGeminiResponse(input, messages, settings?.ai_rules, settings?.ai_memory);
       if (text) {
         setMessages(prev => [...prev, { role: 'model', parts: [{ text }] }]);
         await saveMessage('model', text);

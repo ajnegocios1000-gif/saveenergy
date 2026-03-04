@@ -5,7 +5,7 @@ import {
   Zap, Home, AlertCircle, Loader2, Key, RefreshCw, 
   Settings, Save, Play, Eye, EyeOff, Edit3, Upload, Film,
   LayoutDashboard, Globe, FileImage, Layout, Check, Info, ArrowLeft, LayoutGrid,
-  Copy, Download, Filter, Calendar, DollarSign, CheckCircle2, Search, X
+  Copy, Download, Filter, Calendar, DollarSign, CheckCircle2, Search, X, BrainCircuit
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -64,7 +64,11 @@ const AdminPanel: React.FC = () => {
     about_image_2: 'https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?auto=format&fit=crop&q=80&w=600',
     hero_title: 'Economize até 30% na sua conta de luz',
     hero_subtitle: 'Energia solar compartilhada sem investimento.',
-    whatsapp: '5500000000000'
+    whatsapp: '5500000000000',
+    show_whatsapp: true,
+    show_specialist_btn: true,
+    ai_rules: 'Use gatilhos de economia e benefícios. Enfatize que nada será cobrado, apenas descontos nas faturas. Estude o sistema de energia renovável e a qualidade. Não garanta 30% de desconto, mas diga que pode chegar até 30% dependendo de algumas regras que serão analisadas após o cadastro.',
+    ai_memory: 'A SAVE ENERGY é uma empresa líder em energia solar compartilhada, conectando consumidores a usinas solares sem necessidade de instalação de placas no telhado.'
   });
   
   const [isLoading, setIsLoading] = useState(false);
@@ -911,6 +915,64 @@ const AdminPanel: React.FC = () => {
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">WhatsApp (Dígitos)</label>
                     <input type="text" value={siteContent.whatsapp} onChange={e => setSiteContent({...siteContent, whatsapp: e.target.value})} className="w-full p-5 bg-slate-50 border border-slate-100 rounded-[1.5rem] font-bold outline-none focus:border-blue-600 transition-all text-sm" placeholder="Ex: 5511999999999" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-8">
+                <h3 className="font-black text-xs uppercase tracking-widest text-slate-400 border-b pb-4 flex items-center gap-2">
+                  <Settings size={16} /> Configurações de Exibição
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-6 bg-white border border-slate-100 rounded-3xl flex items-center justify-between shadow-sm">
+                    <div>
+                      <p className="font-black text-slate-800 uppercase text-[10px] tracking-widest">Botão WhatsApp</p>
+                      <p className="text-[9px] text-slate-400 font-bold">Mostrar botão flutuante no site</p>
+                    </div>
+                    <button 
+                      onClick={() => setSiteContent({...siteContent, show_whatsapp: !siteContent.show_whatsapp})}
+                      className={`w-14 h-8 rounded-full transition-all relative ${siteContent.show_whatsapp ? 'bg-emerald-500' : 'bg-slate-200'}`}
+                    >
+                      <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all ${siteContent.show_whatsapp ? 'left-7' : 'left-1'}`}></div>
+                    </button>
+                  </div>
+                  <div className="p-6 bg-white border border-slate-100 rounded-3xl flex items-center justify-between shadow-sm">
+                    <div>
+                      <p className="font-black text-slate-800 uppercase text-[10px] tracking-widest">Botão Especialista</p>
+                      <p className="text-[9px] text-slate-400 font-bold">Mostrar botão de chat no Hero</p>
+                    </div>
+                    <button 
+                      onClick={() => setSiteContent({...siteContent, show_specialist_btn: !siteContent.show_specialist_btn})}
+                      className={`w-14 h-8 rounded-full transition-all relative ${siteContent.show_specialist_btn ? 'bg-emerald-500' : 'bg-slate-200'}`}
+                    >
+                      <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all ${siteContent.show_specialist_btn ? 'left-7' : 'left-1'}`}></div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-8">
+                <h3 className="font-black text-xs uppercase tracking-widest text-slate-400 border-b pb-4 flex items-center gap-2">
+                  <BrainCircuit size={16} /> Inteligência Artificial (Lexi)
+                </h3>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Regras de Atendimento</label>
+                    <textarea 
+                      value={siteContent.ai_rules} 
+                      onChange={e => setSiteContent({...siteContent, ai_rules: e.target.value})}
+                      placeholder="Ex: Use gatilhos de economia. Não garanta 30%..."
+                      className="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-600 transition-all text-sm min-h-[150px]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-widest">Memória Inteligente / Conhecimento</label>
+                    <textarea 
+                      value={siteContent.ai_memory} 
+                      onChange={e => setSiteContent({...siteContent, ai_memory: e.target.value})}
+                      placeholder="Informações específicas sobre a empresa, planos, etc."
+                      className="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:border-blue-600 transition-all text-sm min-h-[150px]"
+                    />
                   </div>
                 </div>
               </div>
