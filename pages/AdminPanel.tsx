@@ -351,6 +351,11 @@ const AdminPanel: React.FC = () => {
               <Globe size={18} /> Redes Sociais
             </button>
           </Tooltip>
+          <Tooltip text="Gerenciar termos e políticas" position="right">
+            <button onClick={() => setActiveTab('terms')} className={`w-full flex items-center gap-3 p-4 rounded-2xl transition-all font-bold text-xs uppercase tracking-widest ${activeTab === 'terms' ? 'bg-blue-600' : 'text-slate-400 hover:bg-slate-800'}`}>
+              <FileImage size={18} /> Termos
+            </button>
+          </Tooltip>
           <Tooltip text="Editar textos e imagens da landing page" position="right">
             <button onClick={() => setActiveTab('content')} className={`w-full flex items-center gap-3 p-4 rounded-2xl transition-all font-bold text-xs uppercase tracking-widest ${activeTab === 'content' ? 'bg-blue-600' : 'text-slate-400 hover:bg-slate-800'}`}>
               <Edit3 size={18} /> Conteúdo
@@ -395,14 +400,61 @@ const AdminPanel: React.FC = () => {
           )}
         </header>
 
-        {activeTab === 'api-keys' && (
+        {activeTab === 'social-links' && (
           <div className="space-y-8 animate-fadeIn">
-            <div className="flex justify-between items-center bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
-               <div className="flex items-center gap-8">
-                  <Tooltip text="Conexão operacional e pronta para rodízio">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-green-500 shadow-lg shadow-green-500/30"></div>
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ativa (VERDE)</span>
+            <h3 className="font-black text-xs uppercase tracking-widest text-slate-400 border-b pb-4">Redes Sociais</h3>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const form = e.target as HTMLFormElement;
+              const platform = (form.elements.namedItem('platform') as HTMLInputElement).value;
+              const url = (form.elements.namedItem('url') as HTMLInputElement).value;
+              await fetch('/api/admin/social-links', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ platform, url }) });
+              form.reset();
+              fetchData();
+            }} className="flex gap-4">
+              <input name="platform" placeholder="Plataforma (Ex: Instagram)" className="p-4 rounded-xl border border-slate-200 flex-1" required />
+              <input name="url" placeholder="URL" className="p-4 rounded-xl border border-slate-200 flex-1" required />
+              <button type="submit" className="px-6 py-4 bg-blue-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest">Adicionar</button>
+            </form>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {socialLinks.map((link: any) => (
+                <div key={link.id} className="p-6 bg-white rounded-2xl border border-slate-100 flex justify-between items-center">
+                  <div>
+                    <p className="font-black text-slate-800 uppercase text-xs">{link.platform}</p>
+                    <p className="text-[10px] text-slate-400 font-mono">{link.url}</p>
+                  </div>
+                  <button onClick={async () => { await fetch(`/api/admin/social-links/${link.id}`, { method: 'DELETE' }); fetchData(); }} className="text-red-500"><Trash2 size={16} /></button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'terms' && (
+          <div className="space-y-8 animate-fadeIn">
+            <h3 className="font-black text-xs uppercase tracking-widest text-slate-400 border-b pb-4">Termos e Políticas</h3>
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              const form = e.target as HTMLFormElement;
+              const title = (form.elements.namedItem('title') as HTMLInputElement).value;
+              const content = (form.elements.namedItem('content') as HTMLTextAreaElement).value;
+              await fetch('/api/admin/terms', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ title, content }) });
+              form.reset();
+              fetchData();
+            }} className="flex flex-col gap-4">
+              <input name="title" placeholder="Título (Ex: Termos de Uso)" className="p-4 rounded-xl border border-slate-200" required />
+              <textarea name="content" placeholder="Conteúdo" className="p-4 rounded-xl border border-slate-200 h-40" required />
+              <button type="submit" className="px-6 py-4 bg-blue-600 text-white rounded-xl font-black uppercase text-[10px] tracking-widest">Adicionar Termo</button>
+            </form>
+            <div className="grid grid-cols-1 gap-4">
+              {terms.map((term: any) => (
+                <div key={term.id} className="p-6 bg-white rounded-2xl border border-slate-100 flex justify-between items-center">
+                  <p className="font-black text-slate-800 uppercase text-xs">{term.title}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
                     </div>
                   </Tooltip>
                   <Tooltip text="Chave válida, mas atingiu limite temporário de uso">

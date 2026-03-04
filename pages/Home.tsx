@@ -133,10 +133,15 @@ const Carousel = () => {
 
 const Home: React.FC = () => {
   const [content, setContent] = useState<any>(null);
+  const [socialLinks, setSocialLinks] = useState<any[]>([]);
+  const [terms, setTerms] = useState<any[]>([]);
+  const [activePopup, setActivePopup] = useState<any>(null);
   const { user } = useAuth();
 
   useEffect(() => {
     supabase.from('site_content').select('*').maybeSingle().then(({ data }: { data: any }) => setContent(data));
+    fetch('/api/social-links').then(r => r.json()).then(setSocialLinks);
+    fetch('/api/terms').then(r => r.json()).then(setTerms);
   }, []);
 
   return (
@@ -321,6 +326,13 @@ const Home: React.FC = () => {
         </div>
       </section>
 
+      <section className="py-20 px-6 bg-emerald-600 text-center">
+        <h2 className="text-3xl font-black uppercase tracking-tighter text-white mb-8">Pronto para economizar?</h2>
+        <Link to="/chat" className="inline-flex items-center gap-3 px-12 py-6 bg-white text-emerald-600 font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-slate-100 shadow-2xl transition-all">
+          <MessageSquare size={18} /> Falar com um Especialista
+        </Link>
+      </section>
+
       <section id="faq" className="py-32 px-6 bg-slate-50">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
@@ -381,11 +393,43 @@ const Home: React.FC = () => {
         </div>
       </section>
 
+      <section id="specialist-cta" className="py-20 px-6 bg-slate-50 text-center">
+        <h2 className="text-3xl font-black uppercase tracking-tighter text-slate-900 mb-8">Ainda com dúvidas?</h2>
+        <Link to="/chat" className="inline-flex items-center gap-3 px-12 py-6 bg-emerald-600 text-white font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-emerald-700 shadow-2xl transition-all">
+          <MessageSquare size={18} /> Falar com um Especialista
+        </Link>
+      </section>
+
       <footer className="pt-32 pb-12 px-6 bg-white border-t border-slate-100 text-center">
         <div className="flex items-center justify-center gap-2 mb-8">
           <Zap className="text-emerald-600" size={28} fill="currentColor" />
           <span className="font-black text-2xl uppercase italic text-slate-900">SAVE <span className="text-emerald-600">ENERGY</span></span>
         </div>
+        
+        <div className="flex justify-center gap-6 mb-8">
+          {socialLinks.map((link, i) => (
+            <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-emerald-600 transition-colors">
+              {link.platform}
+            </a>
+          ))}
+        </div>
+
+        <div className="flex justify-center gap-6 mb-8 text-[10px] font-black uppercase tracking-widest text-slate-500">
+          {terms.map((term, i) => (
+            <button key={i} onClick={() => setActivePopup(term)} className="hover:text-emerald-600">{term.title}</button>
+          ))}
+        </div>
+
+        {activePopup && (
+          <div className="fixed inset-0 z-[200] bg-slate-900/50 flex items-center justify-center p-6" onClick={() => setActivePopup(null)}>
+            <div className="bg-white p-10 rounded-[2rem] max-w-2xl w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+              <h3 className="font-black text-2xl uppercase tracking-tighter mb-4">{activePopup.title}</h3>
+              <p className="text-slate-600 leading-relaxed">{activePopup.content}</p>
+              <button onClick={() => setActivePopup(null)} className="mt-8 px-8 py-4 bg-slate-900 text-white rounded-xl font-black uppercase text-[10px] tracking-widest">Fechar</button>
+            </div>
+          </div>
+        )}
+
         <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">© 2026 SAVE ENERGY • TODOS OS DIREITOS RESERVADOS</p>
       </footer>
 

@@ -192,6 +192,30 @@ app.get('/api/social-links', async (req, res) => {
   }
 });
 
+app.get('/api/terms', async (req, res) => {
+  try {
+    if (!supabase) return res.json([]);
+    const { data, error } = await supabase.from('site_terms').select('*');
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    console.error('Error fetching terms:', err);
+    res.status(500).json([]);
+  }
+});
+
+app.post('/api/admin/terms', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: 'Supabase offline' });
+  const { title, content } = req.body;
+  try {
+    const { error } = await supabase.from('site_terms').insert([{ title, content }]);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/admin/social-links', async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase offline' });
   const { platform, url } = req.body;
