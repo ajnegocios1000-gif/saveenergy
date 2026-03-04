@@ -93,6 +93,15 @@ const RegistrationForm: React.FC = () => {
       setLoadingStage('Análise concluída!');
 
       if (data.nitidez_ok) {
+        // Validação de valor mínimo
+        const billValue = parseFloat(data.valor_total?.toString().replace(',', '.') || '0');
+        if (billValue < 200) {
+          setErrors({ file: "Faturas abaixo de R$ 200,00 não são elegíveis para o desconto." });
+          setFile(null);
+          setIsLoading(false);
+          return;
+        }
+
         setExtractedData(data);
         setFormData(prev => ({
           ...prev,

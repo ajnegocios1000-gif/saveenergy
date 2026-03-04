@@ -198,6 +198,13 @@ const Home: React.FC = () => {
                   <Link to="/chat" className="w-full sm:w-auto px-12 py-6 bg-white border-2 border-emerald-600 text-emerald-600 font-black uppercase text-xs tracking-widest rounded-2xl flex items-center justify-center gap-3 hover:bg-emerald-50 transition-all"><MessageSquare size={18} /> Tire suas Dúvidas</Link>
                 )}
               </div>
+              
+              {/* Gatilhos de Conversão */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-10">
+                <Link to="/register" className="p-4 bg-slate-100 rounded-xl text-center font-black text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-all">Economia Garantida</Link>
+                <Link to="/register" className="p-4 bg-slate-100 rounded-xl text-center font-black text-[10px] uppercase tracking-widest hover:bg-emerald-100 transition-all">Não perca tempo</Link>
+                <Link to="/register" className="p-4 bg-slate-900 text-white rounded-xl text-center font-black text-[10px] uppercase tracking-widest hover:bg-red-600 transition-all">Paga caro porque quer</Link>
+              </div>
             </div>
             <div className="flex-1 w-full relative">
               {content?.hero_image_url && <img src={content.hero_image_url} className="absolute inset-0 w-full h-full object-cover opacity-10 rounded-[3rem] blur-sm scale-105" alt="Bg" />}
@@ -335,6 +342,40 @@ const Home: React.FC = () => {
                   {item.a}
                 </div>
               </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="testimonials" className="py-32 px-6 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-20 space-y-4">
+            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-slate-900">Quem já economiza com a SAVE ENERGY</h2>
+            <p className="text-slate-500 font-medium max-w-2xl mx-auto italic">Veja o que nossos clientes estão dizendo sobre a economia garantida.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              { name: "Ana Silva", city: "São Paulo", text: "Economia real logo na primeira fatura! Incrível, finalmente algo que funciona de verdade." },
+              { name: "Carlos Mendes", city: "Curitiba", text: "Sem obras, sem dor de cabeça. A Save Energy resolveu tudo em minutos. Recomendo demais!" },
+              { name: "Beatriz Souza", city: "Recife", text: "Finalmente uma solução sustentável que cabe no bolso. Minha conta caiu muito!" },
+              { name: "Ricardo Oliveira", city: "Belo Horizonte", text: "Atendimento nota 10 e desconto garantido. Processo super transparente." },
+              { name: "Fernanda Lima", city: "Porto Alegre", text: "A Lexi me ajudou em tudo. Processo super simples e sem burocracia." },
+              { name: "João Santos", city: "Salvador", text: "Minha conta caiu quase 20%. Muito feliz com a economia mensal!" },
+              { name: "Mariana Costa", city: "Fortaleza", text: "A melhor decisão que tomei este ano. Economia garantida sem investimento." },
+              { name: "Pedro Rocha", city: "Manaus", text: "Rápido, fácil e transparente. A Save Energy é sensacional!" },
+              { name: "Camila Dias", city: "Goiânia", text: "A Save Energy mudou minha forma de ver a conta de luz. Tudo muito claro." },
+              { name: "Lucas Ferreira", city: "Vitória", text: "Sem investimento inicial e economia todo mês. Perfeito para quem quer economizar." }
+            ].map((t, i) => (
+              <div key={i} className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-lg transition-all">
+                <div className="flex items-center gap-4 mb-6">
+                  <img src={`https://i.pravatar.cc/150?u=${t.name}`} className="w-14 h-14 rounded-full" alt={t.name} referrerPolicy="no-referrer" />
+                  <div>
+                    <p className="font-black text-slate-800 uppercase text-sm tracking-tight">{t.name}</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">{t.city}</p>
+                  </div>
+                </div>
+                <p className="text-slate-600 text-sm leading-relaxed italic">"{t.text}"</p>
+              </div>
             ))}
           </div>
         </div>

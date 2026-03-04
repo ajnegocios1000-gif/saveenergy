@@ -180,6 +180,42 @@ app.post('/api/leads', async (req, res) => {
   res.json({ success: true });
 });
 
+app.get('/api/social-links', async (req, res) => {
+  try {
+    if (!supabase) return res.json([]);
+    const { data, error } = await supabase.from('social_links').select('*');
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    console.error('Error fetching social links:', err);
+    res.status(500).json([]);
+  }
+});
+
+app.post('/api/admin/social-links', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: 'Supabase offline' });
+  const { platform, url } = req.body;
+  try {
+    const { error } = await supabase.from('social_links').insert([{ platform, url }]);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/social-links/:id', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: 'Supabase offline' });
+  const { id } = req.params;
+  try {
+    const { error } = await supabase.from('social_links').delete().eq('id', id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Vite middleware for development
 if (process.env.NODE_ENV !== 'production') {
   const vite = await createViteServer({

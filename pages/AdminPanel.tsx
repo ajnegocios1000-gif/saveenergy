@@ -346,9 +346,14 @@ const AdminPanel: React.FC = () => {
               <ImageIcon size={18} /> Carrossel
             </button>
           </Tooltip>
+          <Tooltip text="Gerenciar links das redes sociais" position="right">
+            <button onClick={() => setActiveTab('social-links')} className={`w-full flex items-center gap-3 p-4 rounded-2xl transition-all font-bold text-xs uppercase tracking-widest ${activeTab === 'social-links' ? 'bg-blue-600' : 'text-slate-400 hover:bg-slate-800'}`}>
+              <Globe size={18} /> Redes Sociais
+            </button>
+          </Tooltip>
           <Tooltip text="Editar textos e imagens da landing page" position="right">
             <button onClick={() => setActiveTab('content')} className={`w-full flex items-center gap-3 p-4 rounded-2xl transition-all font-bold text-xs uppercase tracking-widest ${activeTab === 'content' ? 'bg-blue-600' : 'text-slate-400 hover:bg-slate-800'}`}>
-              <Globe size={18} /> Conteúdo
+              <Edit3 size={18} /> Conteúdo
             </button>
           </Tooltip>
         </nav>
