@@ -9,8 +9,8 @@ Não trate de outros assuntos fora de eficiência elétrica.`;
 
 export async function getGeminiResponse(message: string, history: any[] = [], customRules: string = '', customMemory: string = '') {
   try {
-    // A plataforma injeta a chave no ambiente
-    const apiKey = process.env.GEMINI_API_KEY;
+    // A plataforma injeta a chave no ambiente via define no vite.config.ts
+    const apiKey = (process as any).env?.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
     
     if (!apiKey) {
       throw new Error("Chave de API Gemini não encontrada.");
@@ -51,7 +51,7 @@ ${customMemory || 'Nenhuma memória adicional.'}`;
 
 export async function analyzeBill(imageBase64: string, mimeType: string) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = (process as any).env?.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
     
     if (!apiKey) {
       throw new Error("Chave de API Gemini não encontrada.");

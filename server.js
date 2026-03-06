@@ -54,6 +54,8 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || getEnv('VITE_SUPABA
 const isValidUrl = (url) => url && (url.startsWith('http://') || url.startsWith('https://'));
 
 let supabase = null;
+const memoryLeads = []; // Fallback in-memory leads
+
 if (isValidUrl(supabaseUrl) && supabaseKey) {
   try {
     supabase = createClient(supabaseUrl, supabaseKey);
@@ -239,13 +241,13 @@ app.post('/api/admin/settings', async (req, res) => {
 
 app.get('/api/admin/leads', async (req, res) => {
   try {
-    if (!supabase) return res.json([]);
+    if (!supabase) return res.json(memoryLeads);
     const { data, error } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     res.json(data || []);
   } catch (err) {
     console.error('Error fetching leads:', err);
-    res.status(500).json([]);
+    res.status(500).json(memoryLeads);
   }
 });
 
@@ -274,7 +276,15 @@ app.delete('/api/admin/leads/:id', async (req, res) => {
 });
 
 app.post('/api/leads', async (req, res) => {
-  if (supabase) await supabase.from('leads').insert([req.body]);
+  const lead = { ...req.body, created_at: new Date().toISOString(), id: Math.random().toString(36).substr(2, 9) };
+  memoryLeads.unshift(lead); // Always save to memory
+  if (supabase) {
+    try {
+      await supabase.from('leads').insert([req.body]);
+    } catch (e) {
+      console.error('Supabase save error:', e.message);
+    }
+  }
   res.json({ success: true });
 });
 

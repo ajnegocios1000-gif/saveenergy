@@ -150,6 +150,7 @@ const RegistrationForm: React.FC = () => {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
+    if (!file) newErrors.file = "A fatura é obrigatória para análise.";
     if (!formData.fullName) newErrors.fullName = "Obrigatório";
     if (!validateCPF(formData.cpf)) newErrors.cpf = "CPF inválido";
     if (!formData.email) newErrors.email = "Obrigatório";
