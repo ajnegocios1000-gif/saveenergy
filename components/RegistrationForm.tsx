@@ -87,7 +87,8 @@ const RegistrationForm: React.FC = () => {
     setLoadingProgress(40);
     
     try {
-      const data = await analyzeBill(base64, selectedFile.type);
+      const mimeType = selectedFile.type || (selectedFile.name.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+      const data = await analyzeBill(base64, mimeType);
       
       setLoadingProgress(100);
       setLoadingStage('Análise concluída!');
@@ -133,17 +134,37 @@ const RegistrationForm: React.FC = () => {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
+
+    // Limite de 10MB
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      setErrors({ file: "Arquivo muito grande. Máximo 10MB." });
+      return;
+    }
+
     setFile(selectedFile);
     setIsLoading(true);
     setLoadingProgress(10);
     setLoadingStage('Processando arquivo...');
 
     const reader = new FileReader();
+    reader.onerror = () => {
+      setErrors({ file: "Erro ao ler o arquivo. Tente novamente." });
+      setIsLoading(false);
+    };
     reader.onload = () => {
-      const base64 = (reader.result as string).split(',')[1];
-      setImageBase64(base64);
-      setLoadingProgress(30);
-      runExtraction(selectedFile, base64);
+      try {
+        const result = reader.result as string;
+        if (!result || !result.includes(',')) {
+          throw new Error("Formato de arquivo inválido");
+        }
+        const base64 = result.split(',')[1];
+        setImageBase64(base64);
+        setLoadingProgress(30);
+        runExtraction(selectedFile, base64);
+      } catch (err) {
+        setErrors({ file: "Erro ao processar arquivo. Tente outro." });
+        setIsLoading(false);
+      }
     };
     reader.readAsDataURL(selectedFile);
   };
