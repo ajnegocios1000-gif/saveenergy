@@ -13,14 +13,12 @@ import { isAdmin } from '../constants';
 const Carousel = () => {
   const [slides, setSlides] = useState<any[]>([]);
   const [current, setCurrent] = useState(0);
-  const [isMuted, setIsMuted] = useState(true); // Inicializa mutado por política de navegadores, mas permite toggle
+  const [isMuted, setIsMuted] = useState(false); // Inicia desmutado conforme solicitado (pode ser bloqueado pelo browser)
   const videoRef = useRef<HTMLVideoElement>(null);
-  // Fix: Use any to avoid NodeJS namespace issues in browser environments
   const timerRef = useRef<any>(null);
 
   useEffect(() => {
     fetch('/api/banners').then(r => r.json()).then(data => {
-      // Filtra apenas os banners ativos
       setSlides(data.filter((s: any) => s.active));
     });
   }, []);
@@ -37,12 +35,16 @@ const Carousel = () => {
     if (slides.length === 0) return;
     
     const currentSlide = slides[current];
-    const duration = currentSlide.duration || 5000;
-
-    // Limpa timer anterior
-    if (timerRef.current) clearTimeout(timerRef.current);
     
-    // Inicia novo timer respeitando a duração específica do slide
+    // Se for vídeo, não usamos timer fixo, esperamos o vídeo acabar via onEnded
+    if (currentSlide.type === 'video') {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      return;
+    }
+
+    // Se for foto, respeita o tempo de duração (padrão 5s)
+    const duration = currentSlide.duration || 5000;
+    if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(nextSlide, duration);
 
     return () => {
@@ -53,7 +55,13 @@ const Carousel = () => {
   useEffect(() => {
     if (videoRef.current && slides[current]?.type === 'video') {
       videoRef.current.muted = isMuted;
-      videoRef.current.play().catch(e => console.warn('Autoplay bloqueado:', e));
+      videoRef.current.play().catch(e => {
+        console.warn('Autoplay com áudio bloqueado, tentando mutado:', e);
+        if (videoRef.current) {
+          videoRef.current.muted = true;
+          videoRef.current.play();
+        }
+      });
     }
   }, [current, slides, isMuted]);
 
@@ -66,16 +74,17 @@ const Carousel = () => {
   const currentSlide = slides[current];
 
   return (
-    <div className="relative w-full aspect-video md:aspect-[21/9] bg-slate-900 overflow-hidden rounded-[3rem] shadow-2xl border-8 border-white group">
+    <div className="relative w-full aspect-video md:aspect-[21/9] bg-black overflow-hidden rounded-[3rem] shadow-2xl border-8 border-white group">
       {currentSlide.type === 'video' ? (
         <video 
           key={currentSlide.id} 
           ref={videoRef} 
           src={currentSlide.url} 
-          className="w-full h-full object-cover" 
+          className="w-full h-full object-contain" // Mostrar vídeo inteiro
           autoPlay 
           playsInline 
           muted={isMuted}
+          onEnded={nextSlide} // Terminou começa o outro imediatamente
         />
       ) : (
         <img 
@@ -130,6 +139,20 @@ const Carousel = () => {
     </div>
   );
 };
+
+const AnimatedCTA = ({ to, children, className = "", icon: Icon }: any) => (
+  <Link 
+    to={to} 
+    className={`group relative overflow-hidden px-12 py-6 bg-emerald-600 text-white font-black uppercase text-sm tracking-widest rounded-2xl shadow-2xl transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-3 ${className}`}
+  >
+    <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+    <div className="absolute -inset-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 animate-shimmer" />
+    <span className="relative z-10 flex items-center gap-3">
+      {Icon && <Icon size={20} className="animate-bounce" />}
+      {children}
+    </span>
+  </Link>
+);
 
 const Home: React.FC = () => {
   const [content, setContent] = useState<any>(null);
@@ -198,7 +221,7 @@ const Home: React.FC = () => {
                 {content?.hero_subtitle || 'Conectamos você às melhores soluções de energia solar compartilhada do Brasil.'}
               </p>
               <div className="flex flex-col sm:flex-row items-center gap-6">
-                <Link to="/register" className="w-full sm:w-auto px-12 py-6 bg-emerald-600 text-white font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-emerald-700 shadow-2xl flex items-center justify-center gap-3"><Rocket size={18} /> Cadastrar Agora</Link>
+                <AnimatedCTA to="/register" icon={Rocket}>Cadastrar Agora</AnimatedCTA>
                 {content?.show_specialist_btn !== false && (
                   <Link to="/chat" className="w-full sm:w-auto px-12 py-6 bg-white border-2 border-emerald-600 text-emerald-600 font-black uppercase text-xs tracking-widest rounded-2xl flex items-center justify-center gap-3 hover:bg-emerald-50 transition-all"><MessageSquare size={18} /> Tire suas Dúvidas</Link>
                 )}
@@ -225,7 +248,7 @@ const Home: React.FC = () => {
             <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-slate-900">Por que escolher a SAVE ENERGY?</h2>
             <p className="text-slate-500 font-medium max-w-2xl mx-auto italic">Transformamos sua forma de consumir energia com tecnologia e sustentabilidade.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
             {[
               { icon: <TrendingDown size={32} />, title: "Economia Real", desc: "Redução garantida de até 30% na sua conta de luz mensal sem pegadinhas." },
               { icon: <Wallet size={32} />, title: "Zero Investimento", desc: "Você não precisa comprar placas solares ou fazer obras. A economia é direta." },
@@ -242,6 +265,9 @@ const Home: React.FC = () => {
                 <p className="text-slate-500 text-sm leading-relaxed font-medium">{benefit.desc}</p>
               </div>
             ))}
+          </div>
+          <div className="flex justify-center">
+            <AnimatedCTA to="/register" icon={TrendingDown}>Começar a Economizar Agora</AnimatedCTA>
           </div>
         </div>
       </section>
@@ -288,7 +314,7 @@ const Home: React.FC = () => {
                 <div className="space-y-4">
                   <h3 className="text-2xl font-black uppercase tracking-tight">Pronto para economizar?</h3>
                   <p className="text-slate-400 text-sm font-medium leading-relaxed">Junte-se a milhares de brasileiros que já reduziram seus custos fixos e ajudam o planeta.</p>
-                  <Link to="/register" className="inline-flex items-center gap-3 px-8 py-4 bg-emerald-600 text-white font-black uppercase text-[10px] tracking-widest rounded-xl hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-600/20">Quero meu desconto agora</Link>
+                  <AnimatedCTA to="/register" className="w-full sm:w-auto" icon={Zap}>Quero meu desconto agora</AnimatedCTA>
                 </div>
               </div>
             </div>
@@ -307,7 +333,7 @@ const Home: React.FC = () => {
               <p className="text-lg text-slate-400 font-medium leading-relaxed">
                 A SAVE ENERGY nasceu com o propósito de tornar a energia limpa acessível a todos os brasileiros, sem a necessidade de investimentos altos em infraestrutura própria. Através da energia solar compartilhada, conectamos usinas solares diretamente à sua rede elétrica.
               </p>
-              <div className="grid grid-cols-2 gap-8">
+              <div className="grid grid-cols-2 gap-8 mb-8">
                 <div>
                   <p className="text-4xl font-black text-emerald-500 tracking-tighter">15k+</p>
                   <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Clientes Ativos</p>
@@ -317,6 +343,7 @@ const Home: React.FC = () => {
                   <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Economizados</p>
                 </div>
               </div>
+              <AnimatedCTA to="/register" className="bg-white text-emerald-600 hover:bg-slate-100" icon={Rocket}>Fazer parte da revolução</AnimatedCTA>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <img src={content?.about_image_1 || "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?auto=format&fit=crop&q=80&w=600"} className="rounded-[2rem] w-full h-64 object-cover shadow-2xl" alt="Solar 1" />
@@ -326,11 +353,9 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      <section className="py-20 px-6 bg-emerald-600 text-center">
+      <section className="py-20 px-6 bg-emerald-600 text-center flex flex-col items-center">
         <h2 className="text-3xl font-black uppercase tracking-tighter text-white mb-8">Pronto para economizar?</h2>
-        <Link to="/chat" className="inline-flex items-center gap-3 px-12 py-6 bg-white text-emerald-600 font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-slate-100 shadow-2xl transition-all">
-          <MessageSquare size={18} /> Falar com um Especialista
-        </Link>
+        <AnimatedCTA to="/chat" className="bg-white text-emerald-600 hover:bg-slate-100" icon={MessageSquare}>Falar com um Especialista</AnimatedCTA>
       </section>
 
       <section id="faq" className="py-32 px-6 bg-slate-50">
@@ -367,20 +392,20 @@ const Home: React.FC = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
-              { name: "Ana Silva", city: "São Paulo", text: "Economia real logo na primeira fatura! Incrível, finalmente algo que funciona de verdade." },
-              { name: "Carlos Mendes", city: "Curitiba", text: "Sem obras, sem dor de cabeça. A Save Energy resolveu tudo em minutos. Recomendo demais!" },
-              { name: "Beatriz Souza", city: "Recife", text: "Finalmente uma solução sustentável que cabe no bolso. Minha conta caiu muito!" },
-              { name: "Ricardo Oliveira", city: "Belo Horizonte", text: "Atendimento nota 10 e desconto garantido. Processo super transparente." },
-              { name: "Fernanda Lima", city: "Porto Alegre", text: "A Lexi me ajudou em tudo. Processo super simples e sem burocracia." },
-              { name: "João Santos", city: "Salvador", text: "Minha conta caiu quase 20%. Muito feliz com a economia mensal!" },
-              { name: "Mariana Costa", city: "Fortaleza", text: "A melhor decisão que tomei este ano. Economia garantida sem investimento." },
-              { name: "Pedro Rocha", city: "Manaus", text: "Rápido, fácil e transparente. A Save Energy é sensacional!" },
-              { name: "Camila Dias", city: "Goiânia", text: "A Save Energy mudou minha forma de ver a conta de luz. Tudo muito claro." },
-              { name: "Lucas Ferreira", city: "Vitória", text: "Sem investimento inicial e economia todo mês. Perfeito para quem quer economizar." }
+              { name: "Ana Silva", city: "São Paulo", text: "Economia real logo na primeira fatura! Incrível, finalmente algo que funciona de verdade.", photo: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200" },
+              { name: "Carlos Mendes", city: "Curitiba", text: "Sem obras, sem dor de cabeça. A Save Energy resolveu tudo em minutos. Recomendo demais!", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200" },
+              { name: "Beatriz Souza", city: "Recife", text: "Finalmente uma solução sustentável que cabe no bolso. Minha conta caiu muito!", photo: `https://i.pravatar.cc/150?u=Beatriz` },
+              { name: "Ricardo Oliveira", city: "Belo Horizonte", text: "Atendimento nota 10 e desconto garantido. Processo super transparente.", photo: `https://i.pravatar.cc/150?u=Ricardo` },
+              { name: "Fernanda Lima", city: "Porto Alegre", text: "A Lexi me ajudou em tudo. Processo super simples e sem burocracia.", photo: `https://i.pravatar.cc/150?u=Fernanda` },
+              { name: "João Santos", city: "Salvador", text: "Minha conta caiu quase 20%. Muito feliz com a economia mensal!", photo: `https://i.pravatar.cc/150?u=Joao` },
+              { name: "Mariana Costa", city: "Fortaleza", text: "A melhor decisão que tomei este ano. Economia garantida sem investimento.", photo: `https://i.pravatar.cc/150?u=Mariana` },
+              { name: "Pedro Rocha", city: "Manaus", text: "Rápido, fácil e transparente. A Save Energy é sensacional!", photo: `https://i.pravatar.cc/150?u=Pedro` },
+              { name: "Camila Dias", city: "Goiânia", text: "A Save Energy mudou minha forma de ver a conta de luz. Tudo muito claro.", photo: `https://i.pravatar.cc/150?u=Camila` },
+              { name: "Lucas Ferreira", city: "Vitória", text: "Sem investimento inicial e economia todo mês. Perfeito para quem quer economizar.", photo: `https://i.pravatar.cc/150?u=Lucas` }
             ].map((t, i) => (
               <div key={i} className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-lg transition-all">
                 <div className="flex items-center gap-4 mb-6">
-                  <img src={`https://i.pravatar.cc/150?u=${t.name}`} className="w-14 h-14 rounded-full" alt={t.name} referrerPolicy="no-referrer" />
+                  <img src={t.photo} className="w-14 h-14 rounded-full object-cover" alt={t.name} referrerPolicy="no-referrer" />
                   <div>
                     <p className="font-black text-slate-800 uppercase text-sm tracking-tight">{t.name}</p>
                     <p className="text-[10px] text-slate-400 font-bold uppercase">{t.city}</p>
@@ -393,11 +418,9 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      <section id="specialist-cta" className="py-20 px-6 bg-slate-50 text-center">
+      <section id="specialist-cta" className="py-20 px-6 bg-slate-50 text-center flex flex-col items-center">
         <h2 className="text-3xl font-black uppercase tracking-tighter text-slate-900 mb-8">Ainda com dúvidas?</h2>
-        <Link to="/chat" className="inline-flex items-center gap-3 px-12 py-6 bg-emerald-600 text-white font-black uppercase text-xs tracking-widest rounded-2xl hover:bg-emerald-700 shadow-2xl transition-all">
-          <MessageSquare size={18} /> Falar com um Especialista
-        </Link>
+        <AnimatedCTA to="/chat" icon={MessageSquare}>Falar com um Especialista</AnimatedCTA>
       </section>
 
       <footer className="pt-32 pb-12 px-6 bg-white border-t border-slate-100 text-center">

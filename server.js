@@ -15,6 +15,22 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// Security Headers
+app.use((req, res, next) => {
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; " +
+    "script-src * 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; " +
+    "connect-src * 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; " +
+    "img-src * 'self' data: blob:; " +
+    "style-src * 'self' 'unsafe-inline'; " +
+    "font-src * 'self' data:; " +
+    "media-src * 'self' data: blob:; " +
+    "frame-src * 'self';"
+  );
+  next();
+});
+
 async function startServer() {
   app.use(cors({
   origin: '*',

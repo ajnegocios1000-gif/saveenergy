@@ -57,6 +57,8 @@ const AdminPanel: React.FC = () => {
 
   const [banners, setBanners] = useState<any[]>([]);
   const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [socialLinks, setSocialLinks] = useState<any[]>([]);
+  const [terms, setTerms] = useState<any[]>([]);
   const [siteContent, setSiteContent] = useState<any>({
     logo_url: '',
     hero_image_url: PLACEHOLDER_IMG,
@@ -142,6 +144,12 @@ const AdminPanel: React.FC = () => {
       } else if (activeTab === 'banners') {
         const { data } = await supabase.from('banners').select('*').order('created_at', { ascending: false });
         setBanners(data || []);
+      } else if (activeTab === 'social-links') {
+        const { data } = await supabase.from('social_links').select('*');
+        setSocialLinks(data || []);
+      } else if (activeTab === 'terms') {
+        const { data } = await supabase.from('site_terms').select('*');
+        setTerms(data || []);
       } else if (activeTab === 'content' || activeTab === 'settings') {
         const { data } = await supabase.from('site_content').select('*').maybeSingle();
         if (data) {
@@ -260,7 +268,8 @@ const AdminPanel: React.FC = () => {
         if (error) throw error;
 
         setBanners(prev => [data, ...prev]);
-        setStatusMsg({ text: 'Mídia adicionada com sucesso!', type: 'success' });
+        setStatusMsg({ text: 'Mídia adicionada com sucesso! 🎬', type: 'success' });
+        setTimeout(() => setStatusMsg(null), 3000);
       };
       reader.readAsDataURL(file);
     } catch (err: any) {
@@ -277,7 +286,8 @@ const AdminPanel: React.FC = () => {
       if (error) throw error;
       setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l));
       if (selectedLead?.id === id) setSelectedLead({ ...selectedLead, status });
-      setStatusMsg({ text: `Lead marcado como ${status === 'executed' ? 'executado' : 'novo'}!`, type: 'success' });
+      setStatusMsg({ text: `Lead marcado como ${status === 'executed' ? 'executado' : 'novo'}! ✅`, type: 'success' });
+      setTimeout(() => setStatusMsg(null), 3000);
     } catch (err: any) {
       setStatusMsg({ text: err.message, type: 'error' });
     }
@@ -296,8 +306,8 @@ const AdminPanel: React.FC = () => {
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    setStatusMsg({ text: `${label} copiado!`, type: 'success' });
-    setTimeout(() => setStatusMsg(null), 2000);
+    setStatusMsg({ text: `${label} copiado para a área de transferência! 📋`, type: 'success' });
+    setTimeout(() => setStatusMsg(null), 3000);
   };
 
   const downloadInvoice = (base64: string, name: string) => {
@@ -312,8 +322,12 @@ const AdminPanel: React.FC = () => {
     try {
       const { error } = await supabase.from('site_content').upsert({ id: 1, ...siteContent });
       if (error) throw error;
-      setStatusMsg({ text: 'Conteúdo visual atualizado!', type: 'success' });
-    } catch (err: any) { setStatusMsg({ text: err.message, type: 'error' }); }
+      setStatusMsg({ text: 'Alterações salvas com sucesso! ✅', type: 'success' });
+      setTimeout(() => setStatusMsg(null), 3000);
+    } catch (err: any) { 
+      setStatusMsg({ text: err.message, type: 'error' }); 
+      setTimeout(() => setStatusMsg(null), 5000);
+    }
     finally { setIsLoading(false); }
   };
 
@@ -375,7 +389,24 @@ const AdminPanel: React.FC = () => {
         </div>
       </aside>
 
-      <main className="flex-1 ml-64 p-12">
+      <main className="flex-1 ml-64 p-12 relative">
+        {statusMsg && (
+          <div className={`fixed top-8 right-8 z-[200] p-6 rounded-[2rem] shadow-2xl border animate-slideIn flex items-center gap-4 min-w-[300px] ${
+            statusMsg.type === 'success' ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-red-600 text-white border-red-500'
+          }`}>
+            <div className="bg-white/20 p-2 rounded-xl">
+              {statusMsg.type === 'success' ? <CheckCircle2 size={24} /> : <AlertCircle size={24} />}
+            </div>
+            <div>
+              <p className="font-black uppercase text-[10px] tracking-widest opacity-70">Notificação do Sistema</p>
+              <p className="font-bold text-sm">{statusMsg.text}</p>
+            </div>
+            <button onClick={() => setStatusMsg(null)} className="ml-auto p-2 hover:bg-white/10 rounded-xl transition-all">
+              <X size={18} />
+            </button>
+          </div>
+        )}
+
         <header className="mb-12 flex justify-between items-end">
           <div className="space-y-1">
             <div className="flex items-center gap-4">
@@ -393,11 +424,6 @@ const AdminPanel: React.FC = () => {
             </div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">SISTEMA MASTER • {ADMIN_EMAILS.join(' & ')}</p>
           </div>
-          {statusMsg && (
-            <div className={`p-4 rounded-2xl font-bold text-[10px] uppercase flex items-center gap-3 animate-fadeIn border ${statusMsg.type === 'success' ? 'bg-green-50 border-green-100 text-green-700' : 'bg-red-50 border-red-100 text-red-700'}`}>
-              <Check size={16} /> {statusMsg.text}
-            </div>
-          )}
         </header>
 
         {activeTab === 'social-links' && (
@@ -455,6 +481,15 @@ const AdminPanel: React.FC = () => {
             </div>
           </div>
         )}
+
+        {activeTab === 'api-keys' && (
+          <div className="space-y-8 animate-fadeIn">
+            <div className="flex justify-between items-center bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100">
+               <div className="flex items-center gap-8">
+                  <Tooltip text="Conexão operacional e pronta para rodízio">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-green-500 shadow-lg shadow-green-500/30"></div>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ativa (VERDE)</span>
                     </div>
                   </Tooltip>
                   <Tooltip text="Chave válida, mas atingiu limite temporário de uso">
