@@ -394,13 +394,13 @@ const Home: React.FC = () => {
             {[
               { name: "Ana Silva", city: "São Paulo", text: "Economia real logo na primeira fatura! Incrível, finalmente algo que funciona de verdade.", photo: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200" },
               { name: "Carlos Mendes", city: "Curitiba", text: "Sem obras, sem dor de cabeça. A Save Energy resolveu tudo em minutos. Recomendo demais!", photo: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200" },
-              { name: "Beatriz Souza", city: "Recife", text: "Finalmente uma solução sustentável que cabe no bolso. Minha conta caiu muito!", photo: `https://i.pravatar.cc/150?u=Beatriz` },
-              { name: "Ricardo Oliveira", city: "Belo Horizonte", text: "Atendimento nota 10 e desconto garantido. Processo super transparente.", photo: `https://i.pravatar.cc/150?u=Ricardo` },
+              { name: "Beatriz Souza", city: "Recife", text: "Finalmente uma solução sustentável que cabe no bolso. Minha conta caiu muito!", photo: "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&q=80&w=200" },
+              { name: "Ricardo Oliveira", city: "Belo Horizonte", text: "Atendimento nota 10 e desconto garantido. Processo super transparente.", photo: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200" },
               { name: "Fernanda Lima", city: "Porto Alegre", text: "A Lexi me ajudou em tudo. Processo super simples e sem burocracia.", photo: `https://i.pravatar.cc/150?u=Fernanda` },
               { name: "João Santos", city: "Salvador", text: "Minha conta caiu quase 20%. Muito feliz com a economia mensal!", photo: `https://i.pravatar.cc/150?u=Joao` },
-              { name: "Mariana Costa", city: "Fortaleza", text: "A melhor decisão que tomei este ano. Economia garantida sem investimento.", photo: `https://i.pravatar.cc/150?u=Mariana` },
+              { name: "Mariana Costa", city: "Fortaleza", text: "A melhor decisão que tomei este ano. Economia garantida sem investimento.", photo: "https://images.unsplash.com/photo-1544126592-807daa215a75?auto=format&fit=crop&q=80&w=200" },
               { name: "Pedro Rocha", city: "Manaus", text: "Rápido, fácil e transparente. A Save Energy é sensacional!", photo: `https://i.pravatar.cc/150?u=Pedro` },
-              { name: "Camila Dias", city: "Goiânia", text: "A Save Energy mudou minha forma de ver a conta de luz. Tudo muito claro.", photo: `https://i.pravatar.cc/150?u=Camila` },
+              { name: "Camila Dias", city: "Goiânia", text: "A Save Energy mudou minha forma de ver a conta de luz. Tudo muito claro.", photo: "https://images.unsplash.com/photo-1516589174184-c685266e430c?auto=format&fit=crop&q=80&w=200" },
               { name: "Lucas Ferreira", city: "Vitória", text: "Sem investimento inicial e economia todo mês. Perfeito para quem quer economizar.", photo: `https://i.pravatar.cc/150?u=Lucas` }
             ].map((t, i) => (
               <div key={i} className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-lg transition-all">
