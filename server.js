@@ -58,29 +58,44 @@ const memoryLeads = []; // Fallback in-memory leads
 const memoryApiKeys = []; // Fallback in-memory API keys
 
 async function getActiveApiKey() {
+  let key = null;
   // 1. Try Supabase
   if (supabase) {
     try {
       const { data } = await supabase.from('api_keys').select('key_value').eq('status', 'active').limit(1);
-      if (data && data.length > 0) return data[0].key_value;
-      
-      // If no active, try any key
-      const { data: anyKey } = await supabase.from('api_keys').select('key_value').limit(1);
-      if (anyKey && anyKey.length > 0) return anyKey[0].key_value;
+      if (data && data.length > 0) {
+        key = data[0].key_value;
+        console.log('Log: Usando chave ativa do Supabase.');
+      } else {
+        // If no active, try any key
+        const { data: anyKey } = await supabase.from('api_keys').select('key_value').limit(1);
+        if (anyKey && anyKey.length > 0) {
+          key = anyKey[0].key_value;
+          console.log('Log: Nenhuma chave ativa no Supabase, usando primeira disponível.');
+        }
+      }
     } catch (e) {
       console.error('Error fetching key from Supabase:', e.message);
     }
   }
   
+  if (key) return key;
+
   // 2. Try Memory
   if (memoryApiKeys.length > 0) {
     const active = memoryApiKeys.find(k => k.status === 'active');
-    if (active) return active.key_value;
+    if (active) {
+      console.log('Log: Usando chave ativa da Memória.');
+      return active.key_value;
+    }
+    console.log('Log: Usando primeira chave da Memória.');
     return memoryApiKeys[0].key_value;
   }
   
   // 3. Try Env
-  return process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+  const envKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+  if (envKey) console.log('Log: Usando chave das variáveis de ambiente.');
+  return envKey;
 }
 
 if (isValidUrl(supabaseUrl) && supabaseKey) {
@@ -179,29 +194,54 @@ app.post('/api/admin/test-key', async (req, res) => {
 
 app.get('/api/admin/api-keys', async (req, res) => {
   try {
-    if (!supabase) return res.json(memoryApiKeys);
-    const { data, error } = await supabase.from('api_keys').select('*').order('created_at', { ascending: false });
-    if (error) throw error;
-    res.json(data || []);
+    let dbKeys = [];
+    if (supabase) {
+      try {
+        const { data, error } = await supabase.from('api_keys').select('*').order('created_at', { ascending: false });
+        if (!error) dbKeys = data || [];
+      } catch (e) {
+        console.warn('Log: Falha ao buscar chaves no Supabase, usando memória.');
+      }
+    }
+    
+    // Merge memory and DB keys, avoiding duplicates by key_value
+    const allKeys = [...memoryApiKeys];
+    dbKeys.forEach(dk => {
+      if (!allKeys.find(ak => ak.key_value === dk.key_value)) {
+        allKeys.push(dk);
+      }
+    });
+    
+    res.json(allKeys);
   } catch (err) {
     console.error('Error fetching API keys:', err);
-    res.status(500).json(memoryApiKeys);
+    res.json(memoryApiKeys);
   }
 });
 
 app.post('/api/admin/api-keys', async (req, res) => {
-  const newKey = { ...req.body, id: Math.random().toString(36).substr(2, 9), created_at: new Date().toISOString() };
-  memoryApiKeys.unshift(newKey);
+  const newKey = { 
+    ...req.body, 
+    id: Math.random().toString(36).substr(2, 9), 
+    created_at: new Date().toISOString() 
+  };
+  
+  // Avoid duplicates in memory
+  if (!memoryApiKeys.find(k => k.key_value === newKey.key_value)) {
+    memoryApiKeys.unshift(newKey);
+  }
   
   if (!supabase) return res.json({ success: true });
   
   try {
-    const { error } = await supabase.from('api_keys').insert([req.body]);
-    if (error) throw error;
+    const { error } = await supabase.from('api_keys').insert([newKey]);
+    if (error) {
+      console.warn('Log: Erro Supabase ao inserir chave, mantendo em memória:', error.message);
+    }
     res.json({ success: true });
   } catch (err) {
     console.error('Supabase API key save error:', err.message);
-    res.json({ success: true }); // Still return success because it's in memory
+    res.json({ success: true });
   }
 });
 
@@ -430,7 +470,15 @@ Se você conseguir ler o nome, CPF ou UC, considere nitidez_ok como true.`;
       },
     });
 
-    res.json(JSON.parse(response.text || "{}"));
+    const text = response.text;
+    if (!text) throw new Error('O modelo não retornou dados legíveis.');
+    
+    try {
+      res.json(JSON.parse(text));
+    } catch (parseErr) {
+      console.error("Erro ao parsear JSON do Gemini:", text);
+      res.status(500).json({ error: "Erro ao processar resposta da IA.", nitidez_ok: false });
+    }
   } catch (error) {
     console.error("Erro na análise da fatura (Backend):", error);
     res.status(500).json({ error: error.message, nitidez_ok: false });

@@ -601,7 +601,7 @@ const AdminPanel: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100">
                            <p className="text-[10px] font-bold text-slate-400 font-mono">
-                             {isVisible ? k.key_value : `••••••••••••${k.key_value.slice(-6)}`}
+                             {isVisible ? k.key_value : `••••••••••••${(k.key_value || '').slice(-6)}`}
                            </p>
                            <button onClick={() => setVisibleKeys(p => ({...p, [k.id]: !p[k.id]}))} className="text-slate-300 hover:text-blue-600 transition-colors">
                              {isVisible ? <EyeOff size={14} /> : <Eye size={14} />}
