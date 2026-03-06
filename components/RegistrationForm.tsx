@@ -202,6 +202,11 @@ const RegistrationForm: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
+      <div className="mb-6 flex justify-start">
+        <button onClick={() => window.location.href = '/'} className="flex items-center gap-2 px-6 py-3 bg-white text-slate-600 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-sm border border-slate-100 hover:bg-slate-50 transition-all">
+          <ChevronLeft size={16} /> Voltar ao Início
+        </button>
+      </div>
       <div className="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-2xl border border-slate-50 relative overflow-hidden">
         {isLoading && (
           <div className="absolute inset-0 bg-slate-900/95 z-50 flex flex-col items-center justify-center p-8 backdrop-blur-sm">

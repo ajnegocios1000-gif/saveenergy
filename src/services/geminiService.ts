@@ -10,7 +10,7 @@ Não trate de outros assuntos fora de eficiência elétrica.`;
 export async function getGeminiResponse(message: string, history: any[] = [], customRules: string = '', customMemory: string = '') {
   try {
     // A plataforma injeta a chave no ambiente
-    const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (process as any).env?.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     
     if (!apiKey) {
       throw new Error("Chave de API Gemini não encontrada.");
@@ -51,7 +51,7 @@ ${customMemory || 'Nenhuma memória adicional.'}`;
 
 export async function analyzeBill(imageBase64: string, mimeType: string) {
   try {
-    const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (process as any).env?.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     
     if (!apiKey) {
       throw new Error("Chave de API Gemini não encontrada.");
@@ -59,8 +59,10 @@ export async function analyzeBill(imageBase64: string, mimeType: string) {
 
     const ai = new GoogleGenAI({ apiKey });
     
-    const prompt = `Analise esta fatura de energia elétrica e extraia os dados necessários.`;
-    const extractionInstruction = "Você é um especialista em OCR e extração de dados de faturas de energia brasileiras. Extraia os dados com precisão cirúrgica.";
+    const prompt = `Analise esta fatura de energia elétrica e extraia os dados necessários. 
+Mesmo que a imagem não esteja perfeita, tente extrair o máximo de informações possível. 
+Se você conseguir ler o nome, CPF ou UC, considere nitidez_ok como true.`;
+    const extractionInstruction = "Você é um especialista em OCR e extração de dados de faturas de energia brasileiras. Sua prioridade é extrair os dados mesmo em imagens com qualidade média (40-60%).";
     
     const responseSchema = {
       type: Type.OBJECT,
@@ -73,7 +75,8 @@ export async function analyzeBill(imageBase64: string, mimeType: string) {
         cidade: { type: Type.STRING },
         uf: { type: Type.STRING, description: "Estado com 2 letras" },
         cep: { type: Type.STRING, description: "Apenas números" },
-        nitidez_ok: { type: Type.BOOLEAN, description: "True se a imagem for legível" }
+        valor_total: { type: Type.STRING, description: "Valor total da fatura" },
+        nitidez_ok: { type: Type.BOOLEAN, description: "True se você conseguiu extrair os dados principais (Nome ou UC)" }
       },
       required: ["nitidez_ok"]
     };
