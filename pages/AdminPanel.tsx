@@ -136,22 +136,28 @@ const AdminPanel: React.FC = () => {
     setIsLoading(true);
     try {
       if (activeTab === 'leads') {
-        const { data } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
+        const response = await fetch('/api/admin/leads');
+        const data = await response.json();
         setLeads(data || []);
       } else if (activeTab === 'api-keys') {
-        const { data } = await supabase.from('api_keys').select('*').order('created_at', { ascending: false });
+        const response = await fetch('/api/admin/api-keys');
+        const data = await response.json();
         setApiKeys(data || []);
       } else if (activeTab === 'banners') {
-        const { data } = await supabase.from('banners').select('*').order('created_at', { ascending: false });
+        const response = await fetch('/api/banners');
+        const data = await response.json();
         setBanners(data || []);
       } else if (activeTab === 'social-links') {
-        const { data } = await supabase.from('social_links').select('*');
+        const response = await fetch('/api/social-links');
+        const data = await response.json();
         setSocialLinks(data || []);
       } else if (activeTab === 'terms') {
-        const { data } = await supabase.from('site_terms').select('*');
+        const response = await fetch('/api/terms');
+        const data = await response.json();
         setTerms(data || []);
       } else if (activeTab === 'content' || activeTab === 'settings') {
-        const { data } = await supabase.from('site_content').select('*').maybeSingle();
+        const response = await fetch('/api/settings');
+        const data = await response.json();
         if (data) {
           setSiteContent({
             ...data,
@@ -233,11 +239,25 @@ const AdminPanel: React.FC = () => {
     if (!newKey.provider || !newKey.key_value) return;
     setIsLoading(true);
     try {
-      await supabase.from('api_keys').insert([{ ...newKey, label: newKey.provider, status: 'active' }]);
+      const response = await fetch('/api/admin/api-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newKey, label: newKey.provider, status: 'active' })
+      });
+      
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Falha ao salvar chave');
+      }
+
       setNewKey({ provider: '', key_value: '' });
-      setStatusMsg({ text: 'Chave registrada! Testando conexão...', type: 'success' });
+      setStatusMsg({ text: 'Chave registrada com sucesso! ✅', type: 'success' });
+      setTimeout(() => setStatusMsg(null), 3000);
       fetchData();
-    } catch (err: any) { setStatusMsg({ text: err.message, type: 'error' }); }
+    } catch (err: any) { 
+      setStatusMsg({ text: err.message, type: 'error' }); 
+      setTimeout(() => setStatusMsg(null), 5000);
+    }
     finally { setIsLoading(false); }
   };
 
@@ -254,49 +274,67 @@ const AdminPanel: React.FC = () => {
         const base64 = reader.result as string;
         const type = file.type.startsWith('video') ? 'video' : 'image';
         
-        const { data, error } = await supabase
-          .from('banners')
-          .insert([{
-            url: base64,
-            type: type,
-            duration: 5000,
-            active: true
-          }])
-          .select()
-          .single();
+        try {
+          const response = await fetch('/api/admin/banners', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              url: base64,
+              type: type,
+              duration: 5000,
+              active: true
+            })
+          });
 
-        if (error) throw error;
+          if (!response.ok) throw new Error('Falha no upload');
+          const data = await response.json();
 
-        setBanners(prev => [data, ...prev]);
-        setStatusMsg({ text: 'Mídia adicionada com sucesso! 🎬', type: 'success' });
-        setTimeout(() => setStatusMsg(null), 3000);
+          setBanners(prev => [data, ...prev]);
+          setStatusMsg({ text: 'Mídia adicionada com sucesso! 🎬', type: 'success' });
+          setTimeout(() => setStatusMsg(null), 3000);
+        } catch (err: any) {
+          setStatusMsg({ text: err.message, type: 'error' });
+          setTimeout(() => setStatusMsg(null), 5000);
+        } finally {
+          setIsLoading(false);
+        }
       };
       reader.readAsDataURL(file);
     } catch (err: any) {
       console.error('Erro no upload:', err);
-      setStatusMsg({ text: 'Falha ao salvar mídia.', type: 'error' });
-    } finally {
+      setStatusMsg({ text: 'Falha ao processar mídia.', type: 'error' });
       setIsLoading(false);
     }
   };
 
   const updateLeadStatus = async (id: string, status: string) => {
     try {
-      const { error } = await supabase.from('leads').update({ status }).eq('id', id);
-      if (error) throw error;
+      const response = await fetch(`/api/admin/leads/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      if (!response.ok) throw new Error('Falha ao atualizar status');
+
       setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l));
       if (selectedLead?.id === id) setSelectedLead({ ...selectedLead, status });
       setStatusMsg({ text: `Lead marcado como ${status === 'executed' ? 'executado' : 'novo'}! ✅`, type: 'success' });
       setTimeout(() => setStatusMsg(null), 3000);
     } catch (err: any) {
       setStatusMsg({ text: err.message, type: 'error' });
+      setTimeout(() => setStatusMsg(null), 5000);
     }
   };
 
   const updateLeadFinance = async (id: string, field: string, value: number) => {
     try {
-      const { error } = await supabase.from('leads').update({ [field]: value }).eq('id', id);
-      if (error) throw error;
+      const response = await fetch(`/api/admin/leads/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: value })
+      });
+      if (!response.ok) throw new Error('Falha ao atualizar campo');
+
       setLeads(prev => prev.map(l => l.id === id ? { ...l, [field]: value } : l));
       if (selectedLead?.id === id) setSelectedLead({ ...selectedLead, [field]: value });
     } catch (err: any) {
@@ -320,8 +358,13 @@ const AdminPanel: React.FC = () => {
   const saveSiteContent = async () => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.from('site_content').upsert({ id: 1, ...siteContent });
-      if (error) throw error;
+      const response = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(siteContent)
+      });
+      if (!response.ok) throw new Error('Falha ao salvar configurações');
+
       setStatusMsg({ text: 'Alterações salvas com sucesso! ✅', type: 'success' });
       setTimeout(() => setStatusMsg(null), 3000);
     } catch (err: any) { 
@@ -574,7 +617,19 @@ const AdminPanel: React.FC = () => {
                           </button>
                          </Tooltip>
                          <Tooltip text="Remover Chave do Banco">
-                          <button onClick={async () => { if(confirm('Apagar chave?')) { await supabase.from('api_keys').delete().eq('id', k.id); fetchData(); } }} className="p-4 bg-red-50 text-red-600 rounded-2xl hover:bg-red-600 hover:text-white transition-all active:scale-90">
+                          <button onClick={async () => { 
+                            if(confirm('Apagar chave?')) { 
+                              try {
+                                const response = await fetch(`/api/admin/api-keys/${k.id}`, { method: 'DELETE' });
+                                if (!response.ok) throw new Error('Falha ao deletar');
+                                setStatusMsg({ text: 'Chave removida! 🗑️', type: 'success' });
+                                setTimeout(() => setStatusMsg(null), 3000);
+                                fetchData(); 
+                              } catch (err: any) {
+                                setStatusMsg({ text: err.message, type: 'error' });
+                              }
+                            } 
+                          }} className="p-4 bg-red-50 text-red-600 rounded-2xl hover:bg-red-600 hover:text-white transition-all active:scale-90">
                             <Trash2 size={20} />
                           </button>
                          </Tooltip>
@@ -838,7 +893,19 @@ const AdminPanel: React.FC = () => {
 
               <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
                 <button 
-                  onClick={() => { if(confirm('Apagar lead?')) { supabase.from('leads').delete().eq('id', selectedLead.id).then(() => { fetchData(); setSelectedLead(null); }); } }}
+                  onClick={() => { 
+                    if(confirm('Apagar lead?')) { 
+                      fetch(`/api/admin/leads/${selectedLead.id}`, { method: 'DELETE' })
+                        .then(res => {
+                          if (!res.ok) throw new Error('Falha ao deletar');
+                          fetchData(); 
+                          setSelectedLead(null); 
+                          setStatusMsg({ text: 'Lead removido! 🗑️', type: 'success' });
+                          setTimeout(() => setStatusMsg(null), 3000);
+                        })
+                        .catch(err => setStatusMsg({ text: err.message, type: 'error' }));
+                    } 
+                  }}
                   className="px-8 py-4 text-red-500 font-black uppercase text-[10px] tracking-widest hover:bg-red-50 rounded-2xl transition-all"
                 >
                   Excluir Lead
@@ -891,10 +958,14 @@ const AdminPanel: React.FC = () => {
                         <button 
                           onClick={async () => {
                             if(confirm('Apagar esta mídia permanentemente?')) {
-                              const { error } = await supabase.from('banners').delete().eq('id', b.id);
-                              if (!error) {
+                              try {
+                                const response = await fetch(`/api/admin/banners/${b.id}`, { method: 'DELETE' });
+                                if (!response.ok) throw new Error('Falha ao deletar');
                                 setBanners(prev => prev.filter(item => item.id !== b.id));
-                                setStatusMsg({ text: 'Mídia removida!', type: 'success' });
+                                setStatusMsg({ text: 'Mídia removida! 🗑️', type: 'success' });
+                                setTimeout(() => setStatusMsg(null), 3000);
+                              } catch (err: any) {
+                                setStatusMsg({ text: err.message, type: 'error' });
                               }
                             }
                           }}
@@ -910,9 +981,16 @@ const AdminPanel: React.FC = () => {
                     <button 
                       onClick={async () => {
                         const newActive = !b.active;
-                        const { error } = await supabase.from('banners').update({ active: newActive }).eq('id', b.id);
-                        if (!error) {
+                        try {
+                          const response = await fetch(`/api/admin/banners/${b.id}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ active: newActive })
+                          });
+                          if (!response.ok) throw new Error('Falha ao atualizar');
                           setBanners(prev => prev.map(item => item.id === b.id ? { ...item, active: newActive } : item));
+                        } catch (err: any) {
+                          setStatusMsg({ text: err.message, type: 'error' });
                         }
                       }}
                       className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${b.active ? 'bg-green-100 border-green-200 text-green-700' : 'bg-slate-100 border-slate-200 text-slate-400'}`}

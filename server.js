@@ -135,6 +135,41 @@ app.post('/api/admin/test-key', async (req, res) => {
   }
 });
 
+app.get('/api/admin/api-keys', async (req, res) => {
+  try {
+    if (!supabase) return res.json([]);
+    const { data, error } = await supabase.from('api_keys').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    console.error('Error fetching API keys:', err);
+    res.status(500).json([]);
+  }
+});
+
+app.post('/api/admin/api-keys', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: 'Supabase offline' });
+  try {
+    const { error } = await supabase.from('api_keys').insert([req.body]);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/api-keys/:id', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: 'Supabase offline' });
+  const { id } = req.params;
+  try {
+    const { error } = await supabase.from('api_keys').delete().eq('id', id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/banners', async (req, res) => {
   try {
     if (!supabase) return res.json([]);
@@ -149,11 +184,34 @@ app.get('/api/banners', async (req, res) => {
 
 app.post('/api/admin/banners', async (req, res) => {
   if (!supabase) return res.status(500).json({ error: 'Supabase offline' });
-  const banners = req.body;
+  const banner = req.body;
   try {
-    for (const b of banners) {
-      await supabase.from('banners').upsert(b);
-    }
+    const { data, error } = await supabase.from('banners').insert([banner]).select().single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/admin/banners/:id', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: 'Supabase offline' });
+  const { id } = req.params;
+  try {
+    const { error } = await supabase.from('banners').update(req.body).eq('id', id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/banners/:id', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: 'Supabase offline' });
+  const { id } = req.params;
+  try {
+    const { error } = await supabase.from('banners').delete().eq('id', id);
+    if (error) throw error;
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -188,6 +246,30 @@ app.get('/api/admin/leads', async (req, res) => {
   } catch (err) {
     console.error('Error fetching leads:', err);
     res.status(500).json([]);
+  }
+});
+
+app.patch('/api/admin/leads/:id', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: 'Supabase offline' });
+  const { id } = req.params;
+  try {
+    const { error } = await supabase.from('leads').update(req.body).eq('id', id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/leads/:id', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: 'Supabase offline' });
+  const { id } = req.params;
+  try {
+    const { error } = await supabase.from('leads').delete().eq('id', id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
