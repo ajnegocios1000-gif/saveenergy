@@ -255,9 +255,9 @@ const RegistrationForm: React.FC = () => {
             <div className="p-4 bg-slate-900 rounded-2xl space-y-3">
               <h4 className="text-green-400 font-black text-[10px] uppercase tracking-widest border-b border-white/10 pb-2">Benefícios</h4>
               <ul className="text-[9px] text-slate-300 space-y-2 font-bold uppercase tracking-wider">
-                <li className="flex items-center gap-2"><Zap size={10} className="text-green-400" /> Desconto de até 20%</li>
+                <li className="flex items-center gap-2"><Zap size={10} className="text-green-400" /> Desconto de até 30%</li>
                 <li className="flex items-center gap-2"><Zap size={10} className="text-green-400" /> Sem Investimento</li>
-                <li className="flex items-center gap-2"><Zap size={10} className="text-green-400" /> Ativação em 60 dias</li>
+                <li className="flex items-center gap-2"><Zap size={10} className="text-green-400" /> Ativação Imediata</li>
               </ul>
             </div>
           </div>

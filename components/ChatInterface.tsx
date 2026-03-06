@@ -147,7 +147,7 @@ const ChatInterface: React.FC = () => {
 Titular: ${data.nome || 'Não identificado'}
 Endereço: ${data.logradouro}, ${data.bairro} - ${data.cidade}/${data.uf}
 
-Com base nesses dados, posso te ajudar a economizar até 20% na sua conta. Gostaria de saber como?`;
+Com base nesses dados, posso te ajudar a economizar até 30% na sua conta. Gostaria de saber como?`;
           
           setMessages(prev => [...prev, { role: 'model', parts: [{ text: analysisText }] }]);
           await saveMessage('model', analysisText);

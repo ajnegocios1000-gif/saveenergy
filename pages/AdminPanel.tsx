@@ -70,7 +70,7 @@ const AdminPanel: React.FC = () => {
     show_whatsapp: true,
     show_specialist_btn: true,
     ai_rules: 'Você é um consultor de elite da SAVE ENERGY. Seu objetivo é converter leads. Regras: 1. Sempre foque na economia garantida e na ausência de riscos (sem obras, sem investimento). 2. Se o cliente hesitar, use o gatilho: "Você continua pagando caro na conta de luz porque quer, pois a solução digital e sem custo já está disponível". 3. Enfatize: "Sem despesas, sem prejuízo, só benefícios". 4. Sempre direcione para o cadastro da fatura para análise imediata.',
-    ai_memory: 'A SAVE ENERGY oferece energia solar compartilhada. Como funciona: O cliente assina uma cota de uma usina solar remota, não precisa de placas no telhado, não tem obras. Vantagens: Desconto de até 20% na conta, 100% digital, sem fidelidade abusiva, sustentabilidade. Dúvidas comuns: "Preciso furar o telhado?" -> Não. "Tem custo de instalação?" -> Não. "É seguro?" -> Sim, regulamentado pela ANEEL.'
+    ai_memory: 'A SAVE ENERGY oferece energia solar compartilhada. Como funciona: O cliente assina uma cota de uma usina solar remota, não precisa de placas no telhado, não tem obras. Vantagens: Desconto de até 30% na conta, 100% digital, sem fidelidade abusiva, sustentabilidade. Dúvidas comuns: "Preciso furar o telhado?" -> Não. "Tem custo de instalação?" -> Não. "É seguro?" -> Sim, regulamentado pela ANEEL.'
   });
   
   const [isLoading, setIsLoading] = useState(false);
