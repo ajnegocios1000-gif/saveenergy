@@ -57,6 +57,32 @@ let supabase = null;
 const memoryLeads = []; // Fallback in-memory leads
 const memoryApiKeys = []; // Fallback in-memory API keys
 
+async function getActiveApiKey() {
+  // 1. Try Supabase
+  if (supabase) {
+    try {
+      const { data } = await supabase.from('api_keys').select('key_value').eq('status', 'active').limit(1);
+      if (data && data.length > 0) return data[0].key_value;
+      
+      // If no active, try any key
+      const { data: anyKey } = await supabase.from('api_keys').select('key_value').limit(1);
+      if (anyKey && anyKey.length > 0) return anyKey[0].key_value;
+    } catch (e) {
+      console.error('Error fetching key from Supabase:', e.message);
+    }
+  }
+  
+  // 2. Try Memory
+  if (memoryApiKeys.length > 0) {
+    const active = memoryApiKeys.find(k => k.status === 'active');
+    if (active) return active.key_value;
+    return memoryApiKeys[0].key_value;
+  }
+  
+  // 3. Try Env
+  return process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+}
+
 if (isValidUrl(supabaseUrl) && supabaseKey) {
   try {
     supabase = createClient(supabaseUrl, supabaseKey);
@@ -357,6 +383,102 @@ app.post('/api/admin/social-links', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/analyze-bill', async (req, res) => {
+  const { imageBase64, mimeType } = req.body;
+  try {
+    const apiKey = await getActiveApiKey();
+    if (!apiKey) throw new Error('Nenhuma chave de API configurada no sistema.');
+
+    const ai = new GoogleGenAI({ apiKey });
+    const prompt = `Analise esta fatura de energia elétrica e extraia os dados necessários. 
+Mesmo que a imagem não esteja perfeita, tente extrair o máximo de informações possível. 
+Se você conseguir ler o nome, CPF ou UC, considere nitidez_ok como true.`;
+    const extractionInstruction = "Você é um especialista em OCR e extração de dados de faturas de energia brasileiras. Sua prioridade é extrair os dados mesmo em imagens com qualidade média (40-60%).";
+    
+    const responseSchema = {
+      type: Type.OBJECT,
+      properties: {
+        nome: { type: Type.STRING, description: "Nome completo do titular" },
+        cpf: { type: Type.STRING, description: "CPF do titular se disponível" },
+        unidade_consumidora: { type: Type.STRING, description: "Número da Unidade Consumidora (UC)" },
+        logradouro: { type: Type.STRING, description: "Rua/Avenida" },
+        bairro: { type: Type.STRING },
+        cidade: { type: Type.STRING },
+        uf: { type: Type.STRING, description: "Estado com 2 letras" },
+        cep: { type: Type.STRING, description: "Apenas números" },
+        valor_total: { type: Type.STRING, description: "Valor total da fatura" },
+        nitidez_ok: { type: Type.BOOLEAN, description: "True se você conseguiu extrair os dados principais (Nome ou UC)" }
+      },
+      required: ["nitidez_ok"]
+    };
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: {
+        parts: [
+          { inlineData: { data: imageBase64, mimeType: mimeType || 'image/jpeg' } },
+          { text: prompt }
+        ]
+      },
+      config: {
+        systemInstruction: extractionInstruction,
+        responseMimeType: "application/json",
+        responseSchema
+      },
+    });
+
+    res.json(JSON.parse(response.text || "{}"));
+  } catch (error) {
+    console.error("Erro na análise da fatura (Backend):", error);
+    res.status(500).json({ error: error.message, nitidez_ok: false });
+  }
+});
+
+app.post('/api/chat', async (req, res) => {
+  const { message, history, customRules, customMemory } = req.body;
+  try {
+    const apiKey = await getActiveApiKey();
+    if (!apiKey) throw new Error('Nenhuma chave de API configurada no sistema.');
+
+    const ai = new GoogleGenAI({ apiKey });
+    const contents = [
+      ...(history || []).map((m) => ({
+        role: m.role,
+        parts: m.parts
+      })), 
+      { role: 'user', parts: [{ text: message }] }
+    ];
+
+    const ECO_SYSTEM_INSTRUCTION = `Você é o Luiz da Save Energy, um consultor de eficiência energética movido a IA de elite da SAVE ENERGY. 
+Seu objetivo é reduzir as contas de ENERGIA ELÉTRICA dos usuários através de análise técnica de faturas, dicas práticas de consumo e hábitos sustentáveis.
+Tom de voz: Profissional, motivador, analítico e focado em economia real. 
+Idioma: Português Brasileiro. Responda sempre de forma estruturada, com seções claras e bullet points. 
+Não trate de outros assuntos fora de eficiência elétrica.`;
+
+    const systemInstruction = `${ECO_SYSTEM_INSTRUCTION}
+    
+REGRAS ADICIONAIS DE ATENDIMENTO:
+${customRules || 'Nenhuma regra adicional.'}
+
+MEMÓRIA E CONHECIMENTO ESPECÍFICO:
+${customMemory || 'Nenhuma memória adicional.'}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents,
+      config: {
+        systemInstruction,
+        temperature: 0.7,
+      },
+    });
+
+    res.json({ text: response.text });
+  } catch (error) {
+    console.error("Erro no Chat (Backend):", error);
+    res.status(500).json({ error: error.message });
   }
 });
 

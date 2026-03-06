@@ -9,40 +9,19 @@ Não trate de outros assuntos fora de eficiência elétrica.`;
 
 export async function getGeminiResponse(message: string, history: any[] = [], customRules: string = '', customMemory: string = '') {
   try {
-    // A plataforma injeta a chave no ambiente via define no vite.config.ts
-    const apiKey = (process as any).env?.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
-    
-    if (!apiKey) {
-      throw new Error("Chave de API Gemini não encontrada.");
-    }
-
-    const ai = new GoogleGenAI({ apiKey });
-    const contents = [
-      ...(history || []).map((m: any) => ({
-        role: m.role,
-        parts: m.parts
-      })), 
-      { role: 'user', parts: [{ text: message }] }
-    ];
-
-    const systemInstruction = `${ECO_SYSTEM_INSTRUCTION}
-    
-REGRAS ADICIONAIS DE ATENDIMENTO:
-${customRules || 'Nenhuma regra adicional.'}
-
-MEMÓRIA E CONHECIMENTO ESPECÍFICO:
-${customMemory || 'Nenhuma memória adicional.'}`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents,
-      config: {
-        systemInstruction,
-        temperature: 0.7,
-      },
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, history, customRules, customMemory })
     });
 
-    return response.text;
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error || 'Erro no chat');
+    }
+
+    const data = await response.json();
+    return data.text;
   } catch (error: any) {
     console.error("Erro no Gemini Service:", error);
     throw error;
@@ -51,52 +30,18 @@ ${customMemory || 'Nenhuma memória adicional.'}`;
 
 export async function analyzeBill(imageBase64: string, mimeType: string) {
   try {
-    const apiKey = (process as any).env?.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
-    
-    if (!apiKey) {
-      throw new Error("Chave de API Gemini não encontrada.");
-    }
-
-    const ai = new GoogleGenAI({ apiKey });
-    
-    const prompt = `Analise esta fatura de energia elétrica e extraia os dados necessários. 
-Mesmo que a imagem não esteja perfeita, tente extrair o máximo de informações possível. 
-Se você conseguir ler o nome, CPF ou UC, considere nitidez_ok como true.`;
-    const extractionInstruction = "Você é um especialista em OCR e extração de dados de faturas de energia brasileiras. Sua prioridade é extrair os dados mesmo em imagens com qualidade média (40-60%).";
-    
-    const responseSchema = {
-      type: Type.OBJECT,
-      properties: {
-        nome: { type: Type.STRING, description: "Nome completo do titular" },
-        cpf: { type: Type.STRING, description: "CPF do titular se disponível" },
-        unidade_consumidora: { type: Type.STRING, description: "Número da Unidade Consumidora (UC)" },
-        logradouro: { type: Type.STRING, description: "Rua/Avenida" },
-        bairro: { type: Type.STRING },
-        cidade: { type: Type.STRING },
-        uf: { type: Type.STRING, description: "Estado com 2 letras" },
-        cep: { type: Type.STRING, description: "Apenas números" },
-        valor_total: { type: Type.STRING, description: "Valor total da fatura" },
-        nitidez_ok: { type: Type.BOOLEAN, description: "True se você conseguiu extrair os dados principais (Nome ou UC)" }
-      },
-      required: ["nitidez_ok"]
-    };
-
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: {
-        parts: [
-          { inlineData: { data: imageBase64, mimeType: mimeType || 'image/jpeg' } },
-          { text: prompt }
-        ]
-      },
-      config: {
-        systemInstruction: extractionInstruction,
-        responseMimeType: "application/json",
-        responseSchema
-      },
+    const response = await fetch('/api/analyze-bill', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageBase64, mimeType })
     });
 
-    return JSON.parse(response.text || "{}");
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error || 'Erro na análise');
+    }
+
+    return await response.json();
   } catch (error: any) {
     console.error("Erro na análise da fatura (Frontend):", error);
     throw error;
