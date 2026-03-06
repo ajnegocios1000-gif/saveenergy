@@ -79,6 +79,10 @@ async function forceReTestAllKeys() {
 
     for (const k of keys) {
       try {
+        if (k.key_value.startsWith('sk-')) {
+          await supabase.from('api_keys').update({ status: 'error' }).eq('id', k.id);
+          continue;
+        }
         const ai = new GoogleGenAI({ apiKey: k.key_value });
         const response = await ai.models.generateContent({
           model: 'gemini-3-flash-preview',
@@ -112,6 +116,15 @@ app.post('/api/admin/test-key', async (req, res) => {
   const { id, key_value } = req.body;
   try {
     const ai = new GoogleGenAI({ apiKey: key_value });
+    
+    // Check for OpenAI key format
+    if (key_value.startsWith('sk-')) {
+      return res.json({ 
+        status: 'error', 
+        error: 'Esta parece ser uma chave da OpenAI. O sistema utiliza a Google Gemini API. Por favor, use uma chave que comece com AIza...' 
+      });
+    }
+
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: 'ping',

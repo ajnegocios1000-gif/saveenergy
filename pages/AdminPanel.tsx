@@ -237,6 +237,15 @@ const AdminPanel: React.FC = () => {
   const saveApiKey = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newKey.provider || !newKey.key_value) return;
+
+    if (newKey.key_value.startsWith('sk-')) {
+      setStatusMsg({ 
+        text: 'Erro: Esta é uma chave da OpenAI. Use uma chave do Google Gemini (começa com AIza).', 
+        type: 'error' 
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch('/api/admin/api-keys', {
