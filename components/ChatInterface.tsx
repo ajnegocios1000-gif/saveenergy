@@ -1,21 +1,24 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Zap, FileText, Sparkles, Lightbulb, LogIn, Phone, User as UserIcon, Save } from 'lucide-react';
+import { Send, Bot, User, Loader2, Zap, FileText, Sparkles, Lightbulb, LogIn, Phone, User as UserIcon, Save, Home, ArrowLeft, Camera } from 'lucide-react';
 import { Message } from '../types';
 import { getGeminiResponse, analyzeBill } from '../src/services/geminiService';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+
+const LUIZ_PHOTO = "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=200";
 
 const ChatInterface: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [profile, setProfile] = useState<{ full_name: string, whatsapp: string } | null>(null);
+  const [profile, setProfile] = useState<{ full_name: string, whatsapp: string, avatar_url?: string } | null>(null);
   const [settings, setSettings] = useState<any>(null);
   const [showProfileForm, setShowProfileForm] = useState(false);
-  const [tempProfile, setTempProfile] = useState({ full_name: '', whatsapp: '' });
+  const [tempProfile, setTempProfile] = useState({ full_name: '', whatsapp: '', avatar_url: '' });
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -39,7 +42,7 @@ const ChatInterface: React.FC = () => {
       setProfile(data);
       if (!data.whatsapp || !data.full_name) {
         setShowProfileForm(true);
-        setTempProfile({ full_name: data.full_name || '', whatsapp: data.whatsapp || '' });
+        setTempProfile({ full_name: data.full_name || '', whatsapp: data.whatsapp || '', avatar_url: data.avatar_url || '' });
       }
     } else if (user) {
       setShowProfileForm(true);
@@ -60,10 +63,15 @@ const ChatInterface: React.FC = () => {
       }));
       setMessages(history);
     } else {
+      const hour = new Date().getHours();
+      let greeting = 'Bom dia';
+      if (hour >= 12 && hour < 18) greeting = 'Boa tarde';
+      else if (hour >= 18 || hour < 5) greeting = 'Boa noite';
+
       setMessages([
         { 
           role: 'model', 
-          parts: [{ text: 'Olá! Sou o EcoAgente, seu especialista em economia de energia. Posso te ajudar a entender sua conta de luz e dar dicas para reduzir seus gastos. Como posso ajudar hoje?' }] 
+          parts: [{ text: `${greeting}! Luiz da Save Energy aqui, seu especialista em economia de energia. Olá! Como posso ajudar hoje?` }] 
         }
       ]);
     }
@@ -86,13 +94,24 @@ const ChatInterface: React.FC = () => {
       id: user?.id,
       full_name: tempProfile.full_name,
       whatsapp: tempProfile.whatsapp,
+      avatar_url: tempProfile.avatar_url,
       updated_at: new Date().toISOString()
     });
 
     if (!error) {
-      setProfile({ full_name: tempProfile.full_name, whatsapp: tempProfile.whatsapp });
+      setProfile({ full_name: tempProfile.full_name, whatsapp: tempProfile.whatsapp, avatar_url: tempProfile.avatar_url });
       setShowProfileForm(false);
     }
+  };
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setTempProfile(prev => ({ ...prev, avatar_url: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
   };
 
   useEffect(() => {
@@ -202,6 +221,26 @@ Com base nesses dados, posso te ajudar a economizar até 20% na sua conta. Gosta
           <p className="text-slate-500 font-medium">Complete seu perfil para continuar a conversa.</p>
         </div>
         <form onSubmit={handleUpdateProfile} className="w-full space-y-4 text-left">
+          <div className="flex flex-col items-center gap-4 mb-6">
+            <div className="relative group">
+              <div className="w-24 h-24 rounded-full bg-slate-100 border-2 border-slate-200 overflow-hidden flex items-center justify-center">
+                {tempProfile.avatar_url ? (
+                  <img src={tempProfile.avatar_url} className="w-full h-full object-cover" alt="Avatar" />
+                ) : (
+                  <UserIcon size={40} className="text-slate-300" />
+                )}
+              </div>
+              <button 
+                type="button"
+                onClick={() => document.getElementById('avatar-upload')?.click()}
+                className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full shadow-lg hover:bg-blue-700 transition-all"
+              >
+                <Camera size={16} />
+              </button>
+              <input id="avatar-upload" type="file" className="hidden" accept="image/*" onChange={handleAvatarUpload} />
+            </div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sua Foto de Perfil</p>
+          </div>
           <div className="space-y-1">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Nome Completo</label>
             <input 
@@ -236,27 +275,23 @@ Com base nesses dados, posso te ajudar a economizar até 20% na sua conta. Gosta
     <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 h-[calc(100vh-180px)] flex flex-col overflow-hidden animate-fadeIn max-w-4xl mx-auto mt-8">
       <div className="bg-slate-900 px-6 py-4 flex items-center justify-between shadow-lg z-10">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center text-white shadow-lg">
-            <Zap size={20} fill="currentColor" />
+          <button onClick={() => navigate('/')} className="p-2 text-slate-400 hover:text-white transition-colors mr-2">
+            <ArrowLeft size={20} />
+          </button>
+          <div className="w-10 h-10 rounded-xl overflow-hidden border border-white/10 shadow-lg">
+            <img src={LUIZ_PHOTO} className="w-full h-full object-cover" alt="Luiz" />
           </div>
           <div className="text-white">
-            <h2 className="font-black text-base tracking-tight leading-none mb-1">Eco<span className="text-amber-400">Agente</span></h2>
+            <h2 className="font-black text-base tracking-tight leading-none mb-1">Luiz <span className="text-amber-400">Save Energy</span></h2>
             <div className="flex items-center gap-1.5 text-[8px] text-slate-400 uppercase tracking-widest font-bold">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
               SISTEMA ATIVO • ESPECIALISTA IA
             </div>
           </div>
         </div>
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          className="hidden" 
-          accept=".pdf,image/*" 
-          onChange={handleFileUpload} 
-        />
         <button 
-          onClick={() => fileInputRef.current?.click()} 
-          className="bg-amber-500 hover:bg-amber-400 text-white px-4 py-2 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-amber-500/20"
+          onClick={() => navigate('/register')} 
+          className="bg-slate-900 border border-white/20 hover:bg-white hover:text-slate-900 text-white px-4 py-2 rounded-xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-lg"
         >
           <FileText size={14} />
           Análise de Fatura
@@ -267,8 +302,16 @@ Com base nesses dados, posso te ajudar a economizar até 20% na sua conta. Gosta
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`flex gap-4 max-w-[90%] md:max-w-[80%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md ${msg.role === 'user' ? 'bg-slate-800 text-white' : 'bg-amber-500 text-white'}`}>
-                {msg.role === 'user' ? <User size={20} /> : <Bot size={20} />}
+              <div className={`w-10 h-10 rounded-2xl overflow-hidden flex items-center justify-center flex-shrink-0 shadow-md ${msg.role === 'user' ? 'bg-slate-800 text-white' : 'bg-amber-500 text-white'}`}>
+                {msg.role === 'user' ? (
+                  profile?.avatar_url ? (
+                    <img src={profile.avatar_url} className="w-full h-full object-cover" alt="User" />
+                  ) : (
+                    <User size={20} />
+                  )
+                ) : (
+                  <img src={LUIZ_PHOTO} className="w-full h-full object-cover" alt="Luiz" />
+                )}
               </div>
               <div className={`p-5 rounded-3xl text-sm md:text-base leading-relaxed whitespace-pre-wrap shadow-sm border ${msg.role === 'user' ? 'bg-slate-800 text-white rounded-tr-none border-slate-700' : 'bg-white text-slate-800 border-slate-100 rounded-tl-none'}`}>
                 {msg.parts[0].text}
@@ -278,8 +321,8 @@ Com base nesses dados, posso te ajudar a economizar até 20% na sua conta. Gosta
         ))}
         {isLoading && (
           <div className="flex justify-start items-center gap-4">
-            <div className="w-10 h-10 rounded-2xl bg-amber-500 flex items-center justify-center text-white animate-pulse">
-              <Sparkles size={20} />
+            <div className="w-10 h-10 rounded-2xl overflow-hidden shadow-lg animate-pulse">
+              <img src={LUIZ_PHOTO} className="w-full h-full object-cover" alt="Luiz" />
             </div>
             <div className="bg-white px-6 py-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-3">
               <Loader2 className="animate-spin text-amber-500" size={16} />
@@ -306,7 +349,7 @@ Com base nesses dados, posso te ajudar a economizar até 20% na sua conta. Gosta
             <Send size={20} />
           </button>
         </div>
-        <p className="text-[9px] text-center text-slate-400 mt-4 font-bold uppercase tracking-widest">Tecnologia EcoAgente • Consultoria Sustentável baseada em IA</p>
+        <p className="text-[9px] text-center text-slate-400 mt-4 font-bold uppercase tracking-widest">Tecnologia Luiz da Save Energy • Consultoria Sustentável baseada em IA</p>
       </div>
     </div>
   );

@@ -343,7 +343,7 @@ const Home: React.FC = () => {
                   <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Economizados</p>
                 </div>
               </div>
-              <AnimatedCTA to="/register" className="bg-white text-emerald-600 hover:bg-slate-100" icon={Rocket}>Fazer parte da revolução</AnimatedCTA>
+              <AnimatedCTA to="/register" className="bg-[#FFDF00] text-slate-900 hover:bg-[#FFD700]" icon={Rocket}>Fazer parte da revolução</AnimatedCTA>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <img src={content?.about_image_1 || "https://images.unsplash.com/photo-1508514177221-188b1cf16e9d?auto=format&fit=crop&q=80&w=600"} className="rounded-[2rem] w-full h-64 object-cover shadow-2xl" alt="Solar 1" />
@@ -396,12 +396,12 @@ const Home: React.FC = () => {
               { name: "Carlos Mendes", city: "Curitiba", text: "Sem obras, sem dor de cabeça. A Save Energy resolveu tudo em minutos. Recomendo demais!", photo: "https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200" },
               { name: "Beatriz Souza", city: "Recife", text: "Finalmente uma solução sustentável que cabe no bolso. Minha conta caiu muito!", photo: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&q=80&w=200" },
               { name: "Ricardo Oliveira", city: "Belo Horizonte", text: "Atendimento nota 10 e desconto garantido. Processo super transparente.", photo: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200" },
-              { name: "Fernanda Lima", city: "Porto Alegre", text: "A Lexi me ajudou em tudo. Processo super simples e sem burocracia.", photo: `https://i.pravatar.cc/150?u=Fernanda` },
-              { name: "João Santos", city: "Salvador", text: "Minha conta caiu quase 20%. Muito feliz com a economia mensal!", photo: `https://i.pravatar.cc/150?u=Joao` },
+              { name: "Fernanda Lima", city: "Porto Alegre", text: "A Lexi me ajudou em tudo. Processo super simples e sem burocracia.", photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200" },
+              { name: "João Santos", city: "Salvador", text: "Minha conta caiu quase 20%. Muito feliz com a economia mensal!", photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200" },
               { name: "Mariana Costa", city: "Fortaleza", text: "A melhor decisão que tomei este ano. Economia garantida sem investimento.", photo: "https://images.unsplash.com/photo-1594493301539-780006769f37?auto=format&fit=crop&q=80&w=200" },
-              { name: "Pedro Rocha", city: "Manaus", text: "Rápido, fácil e transparente. A Save Energy é sensacional!", photo: `https://i.pravatar.cc/150?u=Pedro` },
+              { name: "Pedro Rocha", city: "Manaus", text: "Rápido, fácil e transparente. A Save Energy é sensacional!", photo: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=200" },
               { name: "Camila Dias", city: "Goiânia", text: "A Save Energy mudou minha forma de ver a conta de luz. Tudo muito claro.", photo: "https://images.unsplash.com/photo-1581579186913-45ac3e6efe93?auto=format&fit=crop&q=80&w=200" },
-              { name: "Lucas Ferreira", city: "Vitória", text: "Sem investimento inicial e economia todo mês. Perfeito para quem quer economizar.", photo: `https://i.pravatar.cc/150?u=Lucas` }
+              { name: "Lucas Ferreira", city: "Vitória", text: "Sem investimento inicial e economia todo mês. Perfeito para quem quer economizar.", photo: "https://images.unsplash.com/photo-1511895426328-dc8714191300?auto=format&fit=crop&q=80&w=200" }
             ].map((t, i) => (
               <div key={i} className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-lg transition-all">
                 <div className="flex items-center gap-4 mb-6">
@@ -420,7 +420,7 @@ const Home: React.FC = () => {
 
       <section id="specialist-cta" className="py-20 px-6 bg-slate-50 text-center flex flex-col items-center">
         <h2 className="text-3xl font-black uppercase tracking-tighter text-slate-900 mb-8">Ainda com dúvidas?</h2>
-        <AnimatedCTA to="/chat" icon={MessageSquare}>Falar com um Especialista</AnimatedCTA>
+        <AnimatedCTA to="/chat" className="bg-[#FFDF00] text-slate-900 hover:bg-[#FFD700]" icon={MessageSquare}>Falar com um Especialista</AnimatedCTA>
       </section>
 
       <footer className="pt-32 pb-12 px-6 bg-white border-t border-slate-100 text-center">
