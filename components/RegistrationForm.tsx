@@ -94,10 +94,13 @@ const RegistrationForm: React.FC = () => {
       setLoadingStage('Análise concluída!');
 
       if (data.nitidez_ok) {
-        // Validação de valor mínimo
-        const billValue = parseFloat(data.valor_total?.toString().replace(',', '.') || '0');
+        // Validação de valor mínimo - Limpeza robusta do valor
+        const rawValue = data.valor_total?.toString() || '0';
+        const cleanValue = rawValue.replace(/[^\d,.]/g, '').replace(',', '.');
+        const billValue = parseFloat(cleanValue);
+        
         if (billValue < 200) {
-          setErrors({ file: "Faturas abaixo de R$ 200,00 não são elegíveis para o desconto." });
+          setErrors({ file: `Fatura de R$ ${billValue.toFixed(2)} detectada. O valor mínimo para o benefício é R$ 200,00.` });
           setFile(null);
           setIsLoading(false);
           return;
@@ -192,14 +195,17 @@ const RegistrationForm: React.FC = () => {
     setLoadingStage('Enviando cadastro...');
     
     try {
-      await fetch('/api/leads', {
+      const response = await fetch('/api/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, faturaBase64: imageBase64, extracted: extractedData }),
       });
+      
+      if (!response.ok) throw new Error('Falha no servidor');
+      
       setIsSubmitted(true);
     } catch (err) {
-      alert('Erro ao salvar. Tente novamente.');
+      alert('Erro ao salvar cadastro. Por favor, verifique sua conexão e tente novamente.');
     } finally {
       setIsLoading(false);
     }

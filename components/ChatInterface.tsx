@@ -139,7 +139,8 @@ const ChatInterface: React.FC = () => {
     reader.onload = async () => {
       try {
         const base64 = (reader.result as string).split(',')[1];
-        const data = await analyzeBill(base64, file.type);
+        const mimeType = file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+        const data = await analyzeBill(base64, mimeType);
 
         if (data.nitidez_ok) {
           const analysisText = `Análise da Fatura Concluída! ✅

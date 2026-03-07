@@ -434,9 +434,11 @@ app.post('/api/analyze-bill', async (req, res) => {
 
     const ai = new GoogleGenAI({ apiKey });
     const prompt = `Analise esta fatura de energia elétrica e extraia os dados necessários. 
-Mesmo que a imagem não esteja perfeita, tente extrair o máximo de informações possível. 
-Se você conseguir ler o nome, CPF ou UC, considere nitidez_ok como true.`;
-    const extractionInstruction = "Você é um especialista em OCR e extração de dados de faturas de energia brasileiras. Sua prioridade é extrair os dados mesmo em imagens com qualidade média (40-60%).";
+Sua prioridade é a extração de dados mesmo em imagens de baixa qualidade ou PDFs.
+Considere uma qualidade de leitura de 40% como suficiente para prosseguir se você conseguir identificar pelo menos a Unidade Consumidora (UC) ou o Nome do Titular.
+Se você conseguir ler o Nome, CPF ou UC, considere nitidez_ok como true.`;
+    
+    const extractionInstruction = "Você é um especialista em OCR de faturas de energia brasileiras. Extraia os dados com máxima tolerância a ruídos, sombras ou baixa resolução. Se 40% da fatura for legível e contiver os dados principais, valide como nitidez_ok: true.";
     
     const responseSchema = {
       type: Type.OBJECT,
@@ -474,7 +476,12 @@ Se você conseguir ler o nome, CPF ou UC, considere nitidez_ok como true.`;
     if (!text) throw new Error('O modelo não retornou dados legíveis.');
     
     try {
-      res.json(JSON.parse(text));
+      const parsed = JSON.parse(text);
+      // Ensure nitidez_ok is present and boolean
+      if (typeof parsed.nitidez_ok !== 'boolean') {
+        parsed.nitidez_ok = !!(parsed.nome || parsed.unidade_consumidora);
+      }
+      res.json(parsed);
     } catch (parseErr) {
       console.error("Erro ao parsear JSON do Gemini:", text);
       res.status(500).json({ error: "Erro ao processar resposta da IA.", nitidez_ok: false });
